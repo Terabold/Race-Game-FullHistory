@@ -1,6 +1,6 @@
 import pygame
 import time
-from utils import scale_img, scale_finishline
+from utils import scale_img, scale_finishline, font_scale
 from Agent import Car
 from Environment import Environment
 from State import State
@@ -34,7 +34,6 @@ def main():
     
     # Game variables
     clock = pygame.time.Clock()
-    font = pygame.font.Font(None, 50)
     
     run = True
     car_moving = False
@@ -63,12 +62,12 @@ def main():
         environment.draw(game, images, car)
 
         # Display FPS and time
-        fps_text = font.render(f"FPS: {clock.get_fps():.2f}", True, (255, 255, 255))
+        fps_text = font_scale(18).render(f"FPS: {clock.get_fps():.0f}", True, (255, 255, 255))
         game.blit(fps_text, (10, 10))
 
         if environment.start_time:
             elapsed_time = time.time() - environment.start_time
-            timer_text = font.render(f"Time: {elapsed_time:.2f} sec", True, (255, 255, 255))
+            timer_text = font_scale(25).render(f"Time: {elapsed_time:.2f} sec", True, (255, 255, 255))
             game.blit(timer_text, (10, height - 40))
 
         if car_moving:
@@ -103,8 +102,8 @@ def main():
                 else:
                     car_moving = False
                     state.set_winner(elapsed_time)
-                    winner_text = font.render(state.winner, True, (0, 255, 0))
-                    restart_text = font.render("Press SPACE to play again", True, (255, 255, 255))
+                    winner_text = font_scale(40).render(state.winner, True, (255, 215, 0))
+                    restart_text = font_scale(40).render("Press SPACE to play again", True, (0, 255, 0))
                     
                     # Draw winner and restart text
                     game.blit(winner_text, (width // 2 - winner_text.get_width() // 2, height // 2 - 50))
