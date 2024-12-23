@@ -65,10 +65,14 @@ def main():
         fps_text = font_scale(18).render(f"FPS: {clock.get_fps():.0f}", True, (255, 255, 255))
         game.blit(fps_text, (10, 10))
 
+        #time display
         if environment.start_time:
             elapsed_time = time.time() - environment.start_time
             timer_text = font_scale(25).render(f"Time: {elapsed_time:.2f} sec", True, (255, 255, 255))
             game.blit(timer_text, (10, height - 40))
+
+        vel_text = font_scale(25).render(f"Vel: {round(car.vel*10, 1):.0f}m/s", 1, (255, 255, 255))
+        game.blit(vel_text, (10, height - 45 - timer_text.get_height() ))
 
         if car_moving:
             # Handle input

@@ -10,6 +10,8 @@ class Environment:
         self.finish_line_position = finish_line_position
         self.finish_mask = pygame.mask.from_surface(finish_line)
         self.start_time = None
+        self.font = pygame.font.Font(r'fonts\PressStart2P-Regular.ttf', 100)
+
         
     def setup_images(self, grass, track):
         self.images = [
@@ -31,16 +33,15 @@ class Environment:
     def check_finish(self, car):
         return car.collide(self.finish_mask, *self.finish_line_position)
 
+
     def countdown(self, game, car, images):
-        font = r'fonts\PressStart2P-Regular.ttf'
-        font = pygame.font.Font(font, 100)
         car.reset()
 
         for i in range(3, 0, -1):
             self.draw(game, images, car)
             
             # Render foggy shadow (slightly offset)
-            shadow = font.render(str(i), True, (50, 50, 50))  # Fog-like gray shadow
+            shadow = self.font.render(str(i), True, (50, 50, 50))  # Fog-like gray shadow
             shadow_surface = pygame.Surface(shadow.get_size(), pygame.SRCALPHA)
             shadow_surface.blit(shadow, (0, 0))
             shadow_surface.set_alpha(150)  # Make the shadow semi-transparent
@@ -48,7 +49,7 @@ class Environment:
             
             # Render the main text
             text_color = (220, 20, 60)  # Gradually fade from white to light blue
-            text = font.render(str(i), True, text_color)
+            text = self.font.render(str(i), True, text_color)
             text_rect = text.get_rect(center=(game.get_width() // 2, game.get_height() // 2))
             
             # Draw the shadow and the main text
