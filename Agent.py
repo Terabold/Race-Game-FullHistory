@@ -20,8 +20,6 @@ class Car:
         elif right:
             self.angle -= self.rotation_vel
 
-    def draw(self, game):
-        blit_rotate_center(game, self.img, (self.x, self.y), self.angle)
 
     def move_forward(self):
         self.vel = min(self.vel + self.acceleration, self.max_vel)

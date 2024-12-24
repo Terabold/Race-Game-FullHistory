@@ -1,40 +1,42 @@
 import pygame
 import time
-from utils import scale_img, scale_finishline, font_scale
+from graphic import Graphic
+from graphic import load_assets
 from Agent import Car
 from Environment import Environment
 from State import State
 from action import Action
 
+
 def main():
     pygame.init()
+    pygame.mixer.init()
     
+    # Initialize window and graphics
     width, height = 1600, 900 
-    game = pygame.display.set_mode((width, height))
+    graphics = Graphic(width, height)
     pygame.display.set_caption("Racing Game")
     
-    # Load and scale images with proper conversion
-    car_img = scale_img(pygame.image.load(r'photo\white-car.png').convert_alpha(), 0.5)
-    track_border = pygame.image.load(r'photo\track-stretch-border-2.png').convert_alpha()
-    background = pygame.image.load(r'photo\background_menu.jpeg').convert()
-    grass = pygame.image.load(r'photo\grass2.jpg').convert()  
-    track = pygame.image.load(r'photo\track-stretch.png').convert_alpha()
-    finish_line = scale_finishline(pygame.image.load(r'photo\finish.png').convert(), 2)
-    finish_line_position = [250, 250]
-    
-    # Initialize objects
-    car = Car(5, 5)
-    car.set_image(car_img)
-    
-    environment = Environment(track, track_border, finish_line, finish_line_position)
-    images = environment.setup_images(grass, track)
+    # Load and scale images
+    assets, finish_line_position = load_assets()
+
+    #intilize car
+    car = Car(5, 5)  
+    car.set_image(assets["car"]) 
+
+    #intilize state
+    state = State(car)
+
+    #intilize environment
+    environment = Environment(assets["track"], assets["track_border"], assets["finish_line"], finish_line_position)
+    images = environment.setup_images(assets["grass"], assets["track"])
+
     
     state = State(car)
     action = Action(car)    
     
-    # Game variables
+    # Game loop variables
     clock = pygame.time.Clock()
-    
     run = True
     car_moving = False
     countdown_done = False
@@ -43,59 +45,39 @@ def main():
     while run:
         clock.tick(60)
         
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                run = False
-                break
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
-                    reset_requested = True
-                    countdown_done = False
-                    car_moving = False
+        # Handle events
+        run = action.handle_events(run)
 
+        if action.reset_requested:
+            action.reset_requested = False  # Clear the flag
+            countdown_done = False
+
+        # Handle countdown and reset
         if reset_requested or not countdown_done:
-            environment.countdown(game, car, images)
+            action.reset()
+            assets['coundown'].play()
+            for i in range(3, 0, -1):
+                graphics.draw_no_ui(state, images)
+                graphics.draw_countdown(i)
+                pygame.display.update()
+                pygame.time.wait(1000)     
             countdown_done = True
             car_moving = True
             reset_requested = False
+            environment.start_time = time.time()
 
-        environment.draw(game, images, car)
-
-        # Display FPS and time
-        fps_text = font_scale(18).render(f"FPS: {clock.get_fps():.0f}", True, (255, 255, 255))
-        game.blit(fps_text, (10, 10))
-
-        #time display
-        if environment.start_time:
-            elapsed_time = time.time() - environment.start_time
-            timer_text = font_scale(25).render(f"Time: {elapsed_time:.2f} sec", True, (255, 255, 255))
-            game.blit(timer_text, (10, height - 40))
-
-        vel_text = font_scale(25).render(f"Vel: {round(car.vel*10, 1):.0f}m/s", 1, (255, 255, 255))
-        game.blit(vel_text, (10, height - 45 - timer_text.get_height() ))
-
+        # Update game state
         if car_moving:
             # Handle input
-            keys = pygame.key.get_pressed()
-            moved = False
+            action.handle_input(pygame.key.get_pressed())
 
-            if keys[pygame.K_w]:  # Move forward normally
-                car.move_forward()
-                moved = True
-            if keys[pygame.K_s]:  # Move backward normally
-                car.move_backward()
-                moved = True
-            if keys[pygame.K_a]:  # Rotate left normally
-                car.rotate(left=True)
-            if keys[pygame.K_d]:  # Rotate right normally
-                car.rotate(right=True)
-
-            if not moved:
-                car.reduce_speed()
-
+            # Update elapsed time
+            if environment.start_time:
+                elapsed_time = time.time() - environment.start_time
+                state.update(elapsed_time)
 
             # Check collisions
-            if car_moving and environment.check_collision(car):
+            if environment.check_collision(car):
                 car.bounce()
 
             # Check finish
@@ -106,12 +88,10 @@ def main():
                 else:
                     car_moving = False
                     state.set_winner(elapsed_time)
-                    winner_text = font_scale(40).render(state.winner, True, (255, 215, 0))
-                    restart_text = font_scale(40).render("Press SPACE to play again", True, (0, 255, 0))
-                    
+                    assets['win_sound'].set_volume(0.5)
+                    assets['win_sound'].play()
                     # Draw winner and restart text
-                    game.blit(winner_text, (width // 2 - winner_text.get_width() // 2, height // 2 - 50))
-                    game.blit(restart_text, (width // 2 - restart_text.get_width() // 2, height // 2 + 50))
+                    graphics.draw_winner(state)
                     pygame.display.update()
                     
                     # Wait for space key
@@ -130,8 +110,9 @@ def main():
                                     countdown_done = False
                                     car_moving = False
                                     waiting_for_restart = False
-
-        pygame.display.update()
+                    
+        # Draw current game state
+        graphics.draw(state, images, clock)
 
     pygame.quit()
 

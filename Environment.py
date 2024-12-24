@@ -21,11 +21,6 @@ class Environment:
             (self.track_border, (0, 0))
         ]
         return self.images
-    
-    def draw(self, game, images, car):
-        for img, pos in images:
-            game.blit(img, pos)
-        car.draw(game)
 
     def check_collision(self, car):
         return car.collide(self.track_border_mask)
