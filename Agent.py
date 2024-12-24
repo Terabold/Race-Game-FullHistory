@@ -44,8 +44,18 @@ class Car:
         self.move()
 
     def bounce(self):
-        self.vel = -self.vel * 1.7
-        self.vel *= 0.4
+        self.vel = -self.vel * 1.05
+
+    def drivesound(self, assets):
+        current_time = pygame.time.get_ticks()  # Get the current time in milliseconds
+        
+        if self.vel > 3 and not self.drive_sound_playing:  # Start playing sound when velocity exceeds 3
+            if current_time >= self.sound_start_time:  # Check if we've reached 2 seconds
+                assets['drive'].play(loops=-1, start=2)  # Start the sound from the 2-second mark and loop it
+                self.drive_sound_playing = True  # Mark the sound as playing
+        elif self.vel <= 3 and self.drive_sound_playing:  # Stop the sound if velocity goes below 3
+            assets['drive'].stop()
+            self.drive_sound_playing = False
 
 
     def bounceextra(self):

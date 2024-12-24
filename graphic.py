@@ -11,7 +11,10 @@ def load_assets():
             "track": pygame.image.load(r'photo\track-stretch.png').convert_alpha(),
             "finish_line": scale_finishline(pygame.image.load(r'photo\finish.png').convert(), 2),
             'win_sound' : pygame.mixer.Sound(r'sound\mixkit-completion-of-a-level-2063.wav'),
-            'coundown' : pygame.mixer.Sound(r'sound\game-countdown-62-199828.mp3')
+            'coundown' : pygame.mixer.Sound(r'sound\game-countdown-62-199828.mp3'),
+            'acc' : pygame.mixer.Sound(r'sound\drive\rev2.wav'),
+            'drive' : pygame.mixer.Sound(r'sound\drive\tickover.wav'),
+            'reduce' : pygame.mixer.Sound(r'sound\drive\freewheel2.wav')
 
         }
         finish_line_position = [250, 250] 

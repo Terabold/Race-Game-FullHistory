@@ -1,7 +1,6 @@
 import pygame
 import time
-from graphic import Graphic
-from graphic import load_assets
+from graphic import Graphic, load_assets
 from Agent import Car
 from Environment import Environment
 from State import State
@@ -69,7 +68,7 @@ def main():
         # Update game state
         if car_moving:
             # Handle input
-            action.handle_input(pygame.key.get_pressed())
+            action.handle_input(pygame.key.get_pressed(), assets)
 
             # Update elapsed time
             if environment.start_time:
