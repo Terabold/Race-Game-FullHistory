@@ -68,7 +68,7 @@ def main():
         # Update game state
         if car_moving:
             # Handle input
-            action.handle_input(pygame.key.get_pressed(), assets)
+            action.handle_input(pygame.key.get_pressed())
 
             # Update elapsed time
             if environment.start_time:
