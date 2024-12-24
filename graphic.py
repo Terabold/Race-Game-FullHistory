@@ -1,6 +1,13 @@
-from utils import scale_img, scale_finishline, blit_rotate_center, font_scale
+from utils import blit_rotate_center, font_scale
 import pygame
 
+def scale_img(img, factor):
+    size = round(img.get_width() * factor), round(img.get_height() * factor)
+    return pygame.transform.scale(img, size)
+
+def scale_finishline(img, factor):
+    size = round(img.get_width() * factor), round(img.get_height())
+    return pygame.transform.scale(img, size)
 
 def load_assets():
         assets = {
@@ -11,8 +18,14 @@ def load_assets():
             "track": pygame.image.load(r'photo\track-stretch.png').convert_alpha(),
             "finish_line": scale_finishline(pygame.image.load(r'photo\finish.png').convert(), 2),
             'win_sound' : pygame.mixer.Sound(r'sound\mixkit-completion-of-a-level-2063.wav'),
-            'coundown' : pygame.mixer.Sound(r'sound\game-countdown-62-199828.mp3'),
+            'countdown' : pygame.mixer.Sound(r'sound\game-countdown-62-199828.mp3'),
+            'background_music': pygame.mixer.Sound(r'sound\y2mate.com - KSI  Thick Of It ft Trippie Redd.mp3'),
+            'cheater_sound': pygame.mixer.Sound(r'sound\y2mate.com - Among us sus sound effect.mp3')  # Add your music file
         }
+        assets['win_sound'].set_volume(0.3)
+        assets['cheater_sound'].set_volume(0.3)
+        assets['countdown'].set_volume(0.2)
+        assets['background_music'].set_volume(0.1)
         finish_line_position = [250, 250] 
         return assets, finish_line_position
 
@@ -83,10 +96,36 @@ class Graphic:
         self.game_display.blit(winner_text, winner_rect)
         self.game_display.blit(restart_text, restart_rect)
 
-    @staticmethod
-    def scale_image(img, factor):
-        return scale_img(img, factor)
-    
-    @staticmethod
-    def scale_finish_line(img, factor):
-        return scale_finishline(img, factor)
+    def cheater(self):
+        # Create Warning text with shadow
+        warning_text = font_scale(40).render("We Caught You Cheating", True, (255, 0, 0))
+        warning_shadow = font_scale(40).render("We Caught You Cheating", True, (50, 50, 50))
+        
+        # Create restart text with shadow
+        restart_text = font_scale(40).render("Press SPACE to play again fairly", True, (255, 0, 0))
+        restart_shadow = font_scale(40).render("Press SPACE to play again fairly", True, (50, 50, 50))
+        
+        # Create shadow surfaces with transparency
+        warning_shadow_surface = pygame.Surface(warning_shadow.get_size(), pygame.SRCALPHA)
+        warning_shadow_surface.blit(warning_shadow, (0, 0))
+        
+        restart_shadow_surface = pygame.Surface(restart_shadow.get_size(), pygame.SRCALPHA)
+        restart_shadow_surface.blit(restart_shadow, (0, 0))
+        
+        # Get rectangles for positioning
+        warning_rect = warning_text.get_rect(center=(self.width // 2, self.height // 2 - 50))
+        warning_shadow_rect = warning_shadow_surface.get_rect(
+            center=(self.width // 2 + 5, self.height // 2 - 45)  # Offset shadow slightly
+        )
+        
+        restart_rect = restart_text.get_rect(center=(self.width // 2, self.height // 2 + 50))
+        restart_shadow_rect = restart_shadow_surface.get_rect(
+            center=(self.width // 2 + 5, self.height // 2 + 55)  # Offset shadow slightly
+        )
+        
+        # Draw shadows first, then main text
+        self.game_display.blit(warning_shadow_surface, warning_shadow_rect)
+        self.game_display.blit(restart_shadow_surface, restart_shadow_rect)
+        self.game_display.blit(warning_text, warning_rect)
+        self.game_display.blit(restart_text, restart_rect)
+

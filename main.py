@@ -1,3 +1,4 @@
+# main.py
 import pygame
 import time
 from graphic import Graphic, load_assets
@@ -5,7 +6,6 @@ from Agent import Car
 from Environment import Environment
 from State import State
 from action import Action
-
 
 def main():
     pygame.init()
@@ -19,17 +19,13 @@ def main():
     # Load and scale images
     assets, finish_line_position = load_assets()
 
-    #intilize car
+    #initialize car
     car = Car(5, 5)  
     car.set_image(assets["car"]) 
 
-    #intilize state
-    state = State(car)
-
-    #intilize environment
+    #initialize environment
     environment = Environment(assets["track"], assets["track_border"], assets["finish_line"], finish_line_position)
     images = environment.setup_images(assets["grass"], assets["track"])
-
     
     state = State(car)
     action = Action(car)    
@@ -41,36 +37,82 @@ def main():
     countdown_done = False
     reset_requested = False
 
+
+    def stop_music():
+        assets['background_music'].stop()
+        return False
+
+    def start_music():
+        assets['background_music'].play(-1)  # -1 means loop indefinitely
+        return True
+    
     while run:
         clock.tick(60)
         
         # Handle events
-        run = action.handle_events(run)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    action.reset_requested = True
+                    stop_music()
+                    countdown_done = False
 
         if action.reset_requested:
-            action.reset_requested = False  # Clear the flag
+            action.reset_requested = False
             countdown_done = False
+            stop_music()
+
+        # Check for cheating
+        if car.check_restart():
+            stop_music()
+            assets['cheater_sound'].play()  # Loop the cheater sound
+            graphics.draw_no_ui(state, images)
+            car.reset()
+            graphics.cheater()
+            pygame.display.update()
+            
+            waiting_for_restart = True
+            while waiting_for_restart and run:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        assets['cheater_sound'].stop()  # Stop sound when quitting
+                        waiting_for_restart = False
+                        run = False
+                    if event.type == pygame.KEYDOWN:
+                        if event.key == pygame.K_SPACE:
+                            assets['cheater_sound'].stop()  # Stop sound when space is pressed
+                            car.collide_count = 0
+                            state.reset()
+                            action.reset()
+                            environment.start_time = None
+                            countdown_done = False
+                            car_moving = False
+                            waiting_for_restart = False
 
         # Handle countdown and reset
         if reset_requested or not countdown_done:
             action.reset()
-            assets['coundown'].play()
+            assets['countdown'].play()
             for i in range(3, 0, -1):
                 graphics.draw_no_ui(state, images)
                 graphics.draw_countdown(i)
                 pygame.display.update()
-                pygame.time.wait(1000)     
+                pygame.time.wait(1000)
+            
             countdown_done = True
             car_moving = True
             reset_requested = False
             environment.start_time = time.time()
+            
+            # Start music 1 second after countdown
+            start_music()
 
         # Update game state
         if car_moving:
-            # Handle input
             action.handle_input(pygame.key.get_pressed())
 
-            # Update elapsed time
             if environment.start_time:
                 elapsed_time = time.time() - environment.start_time
                 state.update(elapsed_time)
@@ -78,7 +120,7 @@ def main():
             # Check collisions
             if environment.check_collision(car):
                 car.bounce()
-
+                
             # Check finish
             finish_touch = environment.check_finish(car)
             if finish_touch:
@@ -86,23 +128,21 @@ def main():
                     car.bounceextra()
                 else:
                     car_moving = False
+                    stop_music()
                     state.set_winner(elapsed_time)
-                    assets['win_sound'].set_volume(0.5)
                     assets['win_sound'].play()
-                    # Draw winner and restart text
+                    
                     graphics.draw_winner(state)
                     pygame.display.update()
                     
-                    # Wait for space key
                     waiting_for_restart = True
-                    while waiting_for_restart:
+                    while waiting_for_restart and run:
                         for event in pygame.event.get():
                             if event.type == pygame.QUIT:
                                 waiting_for_restart = False
                                 run = False
                             if event.type == pygame.KEYDOWN:
                                 if event.key == pygame.K_SPACE:
-                                    # Reset everything for a new game
                                     state.reset()
                                     action.reset()
                                     environment.start_time = None
@@ -110,9 +150,10 @@ def main():
                                     car_moving = False
                                     waiting_for_restart = False
                     
-        # Draw current game state
         graphics.draw(state, images, clock)
 
+    # Make sure to stop music when game exits
+    assets['background_music'].stop()
     pygame.quit()
 
 if __name__ == "__main__":

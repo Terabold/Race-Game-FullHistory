@@ -23,7 +23,7 @@ class Action:
     def reset(self):
         self.car.reset()
         
-    def handle_input(self, keys, ):
+    def handle_input(self, keys):
         moved = False
 
         if keys[pygame.K_w]:
