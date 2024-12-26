@@ -1,6 +1,5 @@
 import pygame
 import math
-import time
 class Car:
     START_POS = (350, 200)
 
@@ -12,7 +11,6 @@ class Car:
         self.angle = 0
         self.x, self.y = self.START_POS
         self.acceleration = 0.12
-        self.collide_count = 0  # Track number of collisions
 
 
     def rotate(self, left=False, right=False):
@@ -43,14 +41,27 @@ class Car:
             self.vel = min(self.vel + self.acceleration * 0.3, 0)
         self.move()
 
-    def bounce(self):
-        self.vel = -self.vel * 4  # Normal bounce (stronger effect)
-        time.sleep(0.01)
-        self.vel *= 0.2  # Reduce speed (damping)
+    def handle_border_collision(self):
+        # Determine if we're going forward or backward
+        is_reversing = self.vel < 0
+        
+        # Reduce and reverse velocity based on impact
+        self.vel *= -0.5  # Common practice to bounce back at reduced speed
+        
+        # Move car away from border - adjust direction based on forward/reverse
+        radians = math.radians(self.angle)
+        push_direction = -1 if is_reversing else 1  # Flip push direction when reversing
+        
+        self.x += math.sin(radians) * 10 * push_direction
+        self.y += math.cos(radians) * 10 * push_direction
+        
+        # Reduce car's speed to create impact feel
+        if abs(self.vel) > 2:  # Only slow down significantly on hard impacts
+            self.vel *= 0.7
 
-    def bounceextra(self):
-        self.vel = -self.vel * 1.3 
-
+    def handle_finishline_collision(self):
+        self.vel *= -1.3
+    
     def check_restart(self):
         if self.collide_count > 400:  
             return True  
@@ -60,8 +71,6 @@ class Car:
         car_mask = pygame.mask.from_surface(self.img)
         offset = (int(self.x - x), int(self.y - y))
         poi = mask.overlap(car_mask, offset)
-        if poi: 
-            self.collide_count += 1
         return poi
 
     def reset(self):

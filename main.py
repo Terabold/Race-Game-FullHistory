@@ -12,8 +12,7 @@ def main():
     pygame.mixer.init()
     
     # Initialize window and graphics
-    width, height = 1600, 900 
-    graphics = Graphic(width, height)
+    graphics = Graphic()
     pygame.display.set_caption("Racing Game")
     
     # Load and scale images
@@ -31,7 +30,6 @@ def main():
     action = Action(car)    
     
     # Game loop variables
-    clock = pygame.time.Clock()
     run = True
     car_moving = False
     countdown_done = False
@@ -47,7 +45,7 @@ def main():
         return True
     
     while run:
-        clock.tick(60)
+        graphics.clock.tick(60)
         
         # Handle events
         for event in pygame.event.get():
@@ -63,33 +61,6 @@ def main():
             action.reset_requested = False
             countdown_done = False
             stop_music()
-
-        # Check for cheating
-        if car.check_restart():
-            stop_music()
-            assets['cheater_sound'].play()  # Loop the cheater sound
-            graphics.draw_no_ui(state, images)
-            car.reset()
-            graphics.cheater()
-            pygame.display.update()
-            
-            waiting_for_restart = True
-            while waiting_for_restart and run:
-                for event in pygame.event.get():
-                    if event.type == pygame.QUIT:
-                        assets['cheater_sound'].stop()  # Stop sound when quitting
-                        waiting_for_restart = False
-                        run = False
-                    if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_SPACE:
-                            assets['cheater_sound'].stop()  # Stop sound when space is pressed
-                            car.collide_count = 0
-                            state.reset()
-                            action.reset()
-                            environment.start_time = None
-                            countdown_done = False
-                            car_moving = False
-                            waiting_for_restart = False
 
         # Handle countdown and reset
         if reset_requested or not countdown_done:
@@ -119,13 +90,14 @@ def main():
 
             # Check collisions
             if environment.check_collision(car):
-                car.bounce()
+                assets['collide_sound'].play()
+                car.handle_border_collision()
                 
             # Check finish
             finish_touch = environment.check_finish(car)
             if finish_touch:
                 if finish_touch[1] == 0:
-                    car.bounceextra()
+                    car.handle_finishline_collision()
                 else:
                     car_moving = False
                     stop_music()
@@ -150,7 +122,7 @@ def main():
                                     car_moving = False
                                     waiting_for_restart = False
                     
-        graphics.draw(state, images, clock)
+        graphics.draw(state, images)
 
     # Make sure to stop music when game exits
     assets['background_music'].stop()

@@ -27,31 +27,3 @@ class Environment:
 
     def check_finish(self, car):
         return car.collide(self.finish_mask, *self.finish_line_position)
-
-
-    def countdown(self, game, car, images):
-        car.reset()
-
-        for i in range(3, 0, -1):
-            self.draw(game, images, car)
-            
-            # Render foggy shadow (slightly offset)
-            shadow = self.font.render(str(i), True, (50, 50, 50))  # Fog-like gray shadow
-            shadow_surface = pygame.Surface(shadow.get_size(), pygame.SRCALPHA)
-            shadow_surface.blit(shadow, (0, 0))
-            shadow_surface.set_alpha(150)  # Make the shadow semi-transparent
-            shadow_rect = shadow_surface.get_rect(center=(game.get_width() // 2 + 5, game.get_height() // 2 + 5))
-            
-            # Render the main text
-            text_color = (220, 20, 60)  # Gradually fade from white to light blue
-            text = self.font.render(str(i), True, text_color)
-            text_rect = text.get_rect(center=(game.get_width() // 2, game.get_height() // 2))
-            
-            # Draw the shadow and the main text
-            game.blit(shadow_surface, shadow_rect)
-            game.blit(text, text_rect)
-            
-            pygame.display.update()
-            pygame.time.wait(800)
-
-        self.start_time = time.time()
