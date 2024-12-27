@@ -25,5 +25,5 @@ class Environment:
     def check_collision(self, car):
         return car.collide(self.track_border_mask)
 
-    def check_finish(self, car):
+    def isEndOfGame(self, car):
         return car.collide(self.finish_mask, *self.finish_line_position)

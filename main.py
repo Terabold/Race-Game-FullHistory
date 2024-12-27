@@ -1,4 +1,3 @@
-# main.py
 import pygame
 import time
 from graphic import Graphic, load_assets
@@ -6,6 +5,7 @@ from Agent import Car
 from Environment import Environment
 from State import State
 from action import Action
+from save_time import TimeManager
 
 def main():
     pygame.init()
@@ -34,6 +34,7 @@ def main():
     car_moving = False
     countdown_done = False
     reset_requested = False
+    save_time = TimeManager()
 
 
     def stop_music():
@@ -94,7 +95,7 @@ def main():
                 car.handle_border_collision()
                 
             # Check finish
-            finish_touch = environment.check_finish(car)
+            finish_touch = environment.isEndOfGame(car)
             if finish_touch:
                 if finish_touch[1] == 0:
                     car.handle_finishline_collision()
@@ -102,6 +103,7 @@ def main():
                     car_moving = False
                     stop_music()
                     state.set_winner(elapsed_time)
+                    save_time.save_time(elapsed_time)
                     assets['win_sound'].play()
                     
                     graphics.draw_winner(state)

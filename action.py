@@ -25,7 +25,6 @@ class Action:
         
     def handle_input(self, keys):
         moved = False
-
         if keys[pygame.K_w]:
             self.car.move_forward()
             moved = True
@@ -42,10 +41,3 @@ class Action:
                     
         if not moved:
             self.car.reduce_speed()
-
-    
-        
-
-
-        
-        
