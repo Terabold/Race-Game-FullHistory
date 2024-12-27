@@ -62,11 +62,6 @@ class Car:
     def handle_finishline_collision(self):
         self.vel *= -1.3
     
-    def check_restart(self):
-        if self.collide_count > 400:  
-            return True  
-        return False
-    
     def collide(self, mask, x=0, y=0):
         car_mask = pygame.mask.from_surface(self.img)
         offset = (int(self.x - x), int(self.y - y))

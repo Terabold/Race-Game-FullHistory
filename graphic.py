@@ -16,9 +16,9 @@ def load_assets():
             "grass": pygame.image.load(r'photo\grass2.jpg').convert(),
             "track": pygame.image.load(r'photo\track.png').convert_alpha(),
             "finish_line": scale_finishline(pygame.image.load(r'photo\finish.png').convert(), 1.45),
-            'win_sound' : pygame.mixer.Sound(r'sound\mixkit-completion-of-a-level-2063.wav'),
-            'countdown' : pygame.mixer.Sound(r'sound\game-countdown-62-199828.mp3'),
-            'background_music': pygame.mixer.Sound(r'sound\8 Bits Racing Car Game Theme by Vinny Falcone (mp3cut.net).mp3'),
+            'win_sound' : pygame.mixer.Sound(r'sound\victory.wav'),
+            'countdown' : pygame.mixer.Sound(r'sound\countdown.mp3'),
+            'background_music': pygame.mixer.Sound(r'sound\background_music.mp3'),
             'collide_sound': pygame.mixer.Sound(r'sound\collide.mp3')  
         }
         assets['win_sound'].set_volume(0.3)

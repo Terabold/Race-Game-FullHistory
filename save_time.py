@@ -1,5 +1,3 @@
-# save_times.py
-
 import json
 from datetime import datetime
 
@@ -9,7 +7,6 @@ class TimeManager:
         self.times = self._load_times()
     
     def _load_times(self):
-        """Load existing times from file, or create new file if it doesn't exist"""
         try:
             with open(self.filename, 'r') as file:
                 return json.load(file)
@@ -25,7 +22,7 @@ class TimeManager:
         self.times.append(time_entry)
         
         # Sort times from fastest to slowest
-        self.times.sort(key=lambda x: x["time"])
+        self.times.sort(key=lambda x: x["date"])
         
         # Save to file
         with open(self.filename, 'w') as file:
@@ -40,3 +37,10 @@ class TimeManager:
         self.times = []
         with open(self.filename, 'w') as file:
             json.dump(self.times, file)
+
+def main():
+    time = TimeManager()
+    # TimeManager.clear_times(time)
+
+if __name__ == "__main__":
+    main()
