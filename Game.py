@@ -6,62 +6,66 @@ from save_time import TimeManager
 from Human_Agent import Human_Agent
 from Constants import *
 
-def main():
+def init_game():
     pygame.init()
     pygame.mixer.init()
-    
-    # Initialize window and graphics
     surface = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Racing Game")
     clock = pygame.time.Clock()
-
     environment = Environment(surface)
     player = Human_Agent()
+    save_time = TimeManager()
+    return surface, clock, environment, player, save_time
 
+def handle_countdown(surface, environment):
+    environment.restart()
+    environment.countdown_sound.play()
+    
+    for i in range(3, 0, -1):
+        surface.fill((0, 0, 0))
+        environment.draw()
+        environment.draw_countdown(i)
+        pygame.display.update()
+        pygame.time.wait(1000)
+    
+    
+    environment.start_time = time.time()
+    environment.start_music()
+    return True
+
+def handle_events():
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            return False, False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_r:
+                return True, True
+    return True, False
+
+def main():
+    surface, clock, environment, player, save_time = init_game()
+    
     run = True
     car_can_move = False
     countdown_done = False
     reset_requested = False
     game_over = False
-    save_time = TimeManager()
 
     while run:
         clock.tick(FPS)
 
-        events = pygame.event.get()
-        for event in events:
-            if event.type == pygame.QUIT:
-                run = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
-                    reset_requested = True
-                    environment.stop_music()
-                    countdown_done = False
-                    game_over = False
-
-        # Handle game reset
+        # Handle events
+        run, reset_requested = handle_events()
         if reset_requested:
-            reset_requested = False
             countdown_done = False
             game_over = False
             environment.stop_music()
 
         # Handle countdown
         if not countdown_done and not game_over:
-            environment.restart()
-            environment.countdown_sound.play()
-            for i in range(3, 0, -1):
-                surface.fill((0, 0, 0))  # Clear screen
-                environment.draw()
-                environment.draw_countdown(i)
-                pygame.display.update()
-                pygame.time.wait(1000)
-            
-            countdown_done = True
+            countdown_done = handle_countdown(surface, environment)
             car_can_move = True
             reset_requested = False
-            environment.start_time = time.time()
-            environment.start_music()
 
         # Game state updates
         if car_can_move and not game_over:
