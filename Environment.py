@@ -35,13 +35,17 @@ class Environment:
         self.background_music.set_volume(0.01)
         self.is_music_playing = False  # Track if music is playing
 
-        #load sounds
+        #load countdown sound
         self.countdown_sound = pygame.mixer.Sound(COUNTDOWN_SOUND)
         self.countdown_sound.set_volume(0.1)
 
-        #load sounds
+        #load collide sound
         self.collide_sound = pygame.mixer.Sound(COLLIDE_SOUND)
         self.collide_sound.set_volume(4)
+
+        #load win sound
+        self.win_sound = pygame.mixer.Sound(WIN_SOUND)
+        self.win_sound.set_volume(0.2)
         
         # Create car and its sprite group
         self.car = Car()
@@ -145,42 +149,37 @@ class Environment:
         # Get the state of all keys
         keys = pygame.key.get_pressed()
 
-        if action == 1 or keys[pygame.K_w]:  # Move forward when action is 1 or W is pressed
+        if action == 1 or keys[pygame.K_w]: 
             self.car.move_forward()
 
-        # Action 2: Move backward
-        if action == 2 or keys[pygame.K_s]:  # Move backward when action is 2 or S is pressed
+        if action == 2 or keys[pygame.K_s]: 
             self.car.move_backward()
 
-        # Action 3: Rotate left
-        if action == 3 or keys[pygame.K_a]:  # Rotate left when action is 3 or A is pressed
+        if action == 3 or keys[pygame.K_a]: 
             self.car.rotate(left=True)
 
-        # Action 4: Rotate right
-        if action == 4 or keys[pygame.K_d]:  # Rotate right when action is 4 or D is pressed
+        if action == 4 or keys[pygame.K_d]:  
             self.car.rotate(right=True)
 
-        # Action 0: Reduce speed
-        if action == 0 or (not keys[pygame.K_w] and not keys[pygame.K_s]):  # Reduce speed when no movement keys are pressed or action is 0
+        if action == 0 or (not keys[pygame.K_w] and not keys[pygame.K_s]): 
             self.car.reduce_speed()
 
-        # Check collisions
         if self.check_collision():
             self.car.handle_border_collision()
             self.collide_sound.play()
-            reward -= 1  # Penalty for hitting border
+            reward -= 1  
 
-        # Check finish line
         finish_touch = self.check_finish_line()
         if finish_touch:
-            if finish_touch[1] == 0:  # wrong direction hit the finish line
+            if finish_touch[1] == 0:  
                 self.car.handle_finishline_collision()
-                reward -= 2  # Penalty for wrong way of the finish line
-            else: #winning
-                reward += 5  # Bonus for passing the finish line forward
+                reward -= 2 
+            else:
+                self.win_sound.play()
+                reward += 5  
                 self.lap_count += 1
                 # if self.lap_count >= LAPS:
-                #     reward += 5  # Additional bonus for completing all laps
+                #     reward += 5  
                 done = True
 
         return reward, done
@@ -195,6 +194,7 @@ class Environment:
             self.car.angle,          # Car angle
             self.car.velocity,       # Car velocity
             self.lap_count,          # Current lap
-            self.elapsed_time        # Time elapsed
+            self.elapsed_time,       # Time elapsed
+            self.car.collide()       # Is Colliding
         ]
         return state_list
