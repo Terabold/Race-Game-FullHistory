@@ -22,7 +22,7 @@ class TimeManager:
         self.times.append(time_entry)
         
         # Sort times from fastest to slowest
-        self.times.sort(key=lambda x: x["date"])
+        self.times.sort(key=lambda x: x["time"])
         
         # Save to file
         with open(self.filename, 'w') as file:
