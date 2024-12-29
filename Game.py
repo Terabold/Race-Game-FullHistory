@@ -3,7 +3,6 @@ import sys
 import time
 from Environment import Environment
 from save_time import TimeManager
-from Human_Agent import Human_Agent
 from Constants import *
 
 def init_game():
@@ -13,9 +12,8 @@ def init_game():
     pygame.display.set_caption("Racing Game")
     clock = pygame.time.Clock()
     environment = Environment(surface)
-    player = Human_Agent()
     save_time = TimeManager()
-    return surface, clock, environment, player, save_time
+    return surface, clock, environment, save_time
 
 def handle_countdown(surface, environment):
     environment.restart()
@@ -43,7 +41,7 @@ def handle_events():
     return True, False
 
 def main():
-    surface, clock, environment, player, save_time = init_game()
+    surface, clock, environment, save_time = init_game()
     
     run = True
     car_can_move = False
@@ -69,8 +67,7 @@ def main():
 
         # Game state updates
         if car_can_move and not game_over:
-            action = player.get_Action(pygame.key.get_pressed())
-            reward, done = environment.move(action=action)
+            done = environment.move()
         
             if environment.start_time:
                 elapsed_time = time.time() - environment.start_time

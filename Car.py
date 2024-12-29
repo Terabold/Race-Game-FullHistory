@@ -6,7 +6,7 @@ class Car(pygame.sprite.Sprite):
     def __init__(self) -> None:
         super().__init__()
         self.img = pygame.image.load(CAR_IMG).convert_alpha()
-        self.image = pygame.transform.scale(self.img, (19, 38))
+        self.image = pygame.transform.scale(self.img, (20, 40))
         self.x, self.y = CAR_START_POS
         self.rect = self.image.get_rect(center=(self.x, self.y))
         self.max_velocity = CARSPEED
@@ -48,9 +48,9 @@ class Car(pygame.sprite.Sprite):
 
     def reduce_speed(self):
         if self.velocity > 0:
-            self.velocity = max(self.velocity - self.acceleration * 0.3, 0)  # Slow down more gently
+            self.velocity = max(self.velocity - self.acceleration * 0.5, 0)  # Slow down more gently
         elif self.velocity < 0:
-            self.velocity = min(self.velocity + self.acceleration * 0.3, 0)
+            self.velocity = min(self.velocity + self.acceleration * 0.5, 0)
         self.move()
 
     def handle_border_collision(self):
@@ -70,9 +70,6 @@ class Car(pygame.sprite.Sprite):
         # Reduce car's speed to create impact feel
         if abs(self.velocity) > 2:  # Only slow down significantly on hard impacts
             self.velocity *= 0.7
-
-    def handle_finishline_collision(self):
-        self.velocity *= -1.3
     
     def collide(self, mask, x=0, y=0):
         car_mask = pygame.mask.from_surface(self.image)

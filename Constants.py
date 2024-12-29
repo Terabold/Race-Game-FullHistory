@@ -12,13 +12,13 @@ WHITE = (255, 255, 255)
 
 FONT = 'fonts\PressStart2P-Regular.ttf'
 
-LAPS = 3
 CARSPEED = 5
 ROTATESPEED = 5
 ACCELERATION = 0.12
 
 TRACK_BACKGROUND = 'photo\Surface.jpg'
-CAR_IMG = "photo\car.png"
+# CAR_IMG = "photo\car.png"
+CAR_IMG = "photo\car-blue.png"
 TRACKBORDER = r'photo\track-border.png'
 FINISHLINE = r'photo\finish.png'
 

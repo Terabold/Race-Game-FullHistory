@@ -2,6 +2,7 @@ import pygame
 from Car import Car
 from Ground import Ground
 from Constants import *
+from speedometer import Speedometer
 
 def font_scale(size):
     return pygame.font.Font(r'fonts\PressStart2P-Regular.ttf', size)
@@ -52,7 +53,7 @@ class Environment:
         self.car_group = pygame.sprite.GroupSingle(self.car)
         
         # Game state variables
-        self.lap_count = 0
+        self.speedometer = Speedometer()
         self.elapsed_time = 0
         self.start_time = None
         self.winner = 0
@@ -94,12 +95,10 @@ class Environment:
         if self.elapsed_time > 0:
             # Time
             timer_text = font_scale(25).render(f"Time: {self.elapsed_time:.2f}", True, WHITE)
-            timer_height = timer_text.get_height()
             self.surface.blit(timer_text, (10, self.surface.get_height() - 40))
 
             # Velocity
-            vel_text = font_scale(25).render(f"Vel: {round(self.car.velocity * 10, 1):.0f}m/s", True, WHITE)
-            self.surface.blit(vel_text, (10, self.surface.get_height() - 45 - timer_height))
+            self.speedometer.draw(self.surface, self.car.velocity)
 
     def draw_countdown(self, count):
         # Render foggy shadow (slightly offset)
@@ -143,46 +142,49 @@ class Environment:
     def check_finish_line(self):
         return self.car.collide(self.finish_mask, *self.finish_line_position)
 
-    def move(self, action):
-        reward = 0
+    def move(self):
         done = False
+
         # Get the state of all keys
         keys = pygame.key.get_pressed()
 
-        if action == 1 or keys[pygame.K_w]: 
+        # Reset movement flags
+        moving = False
+
+        # Forward and backward movement
+        if keys[pygame.K_w] and not keys[pygame.K_s]:
             self.car.move_forward()
-
-        if action == 2 or keys[pygame.K_s]: 
+            moving = True
+        elif keys[pygame.K_s] and not keys[pygame.K_w]:
             self.car.move_backward()
+            moving = True
 
-        if action == 3 or keys[pygame.K_a]: 
+        # Rotation
+        if keys[pygame.K_a]: 
             self.car.rotate(left=True)
-
-        if action == 4 or keys[pygame.K_d]:  
+        if keys[pygame.K_d]:  
             self.car.rotate(right=True)
 
-        if action == 0 or (not keys[pygame.K_w] and not keys[pygame.K_s]): 
+        # Decelerate smoothly if not moving
+        if not moving:
             self.car.reduce_speed()
 
+        # Handle collisions
         if self.check_collision():
             self.car.handle_border_collision()
             self.collide_sound.play()
-            reward -= 1  
 
+        # Check finish line
         finish_touch = self.check_finish_line()
         if finish_touch:
             if finish_touch[1] == 0:  
-                self.car.handle_finishline_collision()
-                reward -= 2 
+                self.car.handle_border_collision()
             else:
                 self.win_sound.play()
-                reward += 5  
-                self.lap_count += 1
-                # if self.lap_count >= LAPS:
-                #     reward += 5  
                 done = True
 
-        return reward, done
+        return done
+
 
     def state(self):
         """Return current state for AI"""
