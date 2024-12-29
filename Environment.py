@@ -163,7 +163,7 @@ class Environment:
 
         if action == 0 or (not keys[pygame.K_w] and not keys[pygame.K_s]): 
             self.car.reduce_speed()
-        
+
         if self.check_collision():
             self.car.handle_border_collision()
             self.collide_sound.play()

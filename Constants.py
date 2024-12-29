@@ -15,8 +15,7 @@ FONT = 'fonts\PressStart2P-Regular.ttf'
 LAPS = 3
 CARSPEED = 5
 ROTATESPEED = 5
-ACCELERATION = 0.1
-
+ACCELERATION = 0.12
 
 TRACK_BACKGROUND = 'photo\Surface.jpg'
 CAR_IMG = "photo\car.png"
