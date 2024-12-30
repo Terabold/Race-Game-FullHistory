@@ -36,6 +36,6 @@ class Speedometer:
         pygame.draw.circle(surface, self.needle_color, self.center, 5)
         
         # Draw speed text in center-bottom of speedometer
-        speed_text = self.font.render(f"{abs(velocity*25):.1f} Km/h", True, WHITE)
+        speed_text = self.font.render(f"{abs(velocity*28):.0f} Km/h", True, WHITE)
         text_rect = speed_text.get_rect(center=(self.center[0], self.center[1] + self.radius + 20))
         surface.blit(speed_text, text_rect)

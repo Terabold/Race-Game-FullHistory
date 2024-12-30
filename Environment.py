@@ -79,7 +79,7 @@ class Environment:
     def draw(self):
         # Draw background
         self.ground_group.draw(self.surface)
-
+        
         # Draw track border and finish line
         self.surface.blit(self.track_border, (0, 0))
         self.surface.blit(self.finish_line, self.finish_line_position)
