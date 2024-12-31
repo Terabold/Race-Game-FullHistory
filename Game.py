@@ -64,7 +64,7 @@ def main():
         if game_over:
             environment.draw_winner()
         else:
-            environment.draw_ui(clock)
+            environment.draw_ui()
         pygame.display.update()
 
         # Handle restart

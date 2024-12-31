@@ -4,8 +4,9 @@ from Ground import Ground
 from Constants import *
 from speedometer import Speedometer
 
-def font_scale(size):
-    return pygame.font.Font(r'fonts\PressStart2P-Regular.ttf', size)
+def font_scale(size, Font=FONT):
+    return pygame.font.Font(Font, size)
+
 
 def blit_rotate_center(game, image, top_left, angle):
     rotated_image = pygame.transform.rotate(image, angle)
@@ -65,37 +66,42 @@ class Environment:
         blit_rotate_center(self.surface, self.car.image, 
                           (self.car.x, self.car.y), self.car.angle)
 
-    def draw_ui(self, clock):
-        fps_text = font_scale(18).render(f"FPS: {int(clock.get_fps())}", True, WHITE)
-        self.surface.blit(fps_text, (10, 10))
-
+    def draw_ui(self):
         if self.elapsed_time > 0:
-            timer_text = font_scale(25).render(f"Time: {self.elapsed_time:.2f}", True, WHITE)
-            self.surface.blit(timer_text, (10, self.surface.get_height() - 40))
+            # Timer
+            timer_text = font_scale(30).render(f"Time: {self.elapsed_time:.2f}", True, WHITE)
+            timer_rect = timer_text.get_rect()
+            timer_rect.topleft = (10, 10)  # Position timer in top left
+            self.surface.blit(timer_text, timer_rect)
+            
+            # Speedometer in bottom left (size is controlled in Speedometer class)
             self.speedometer.draw(self.surface, self.car.velocity)
 
     def draw_countdown(self, count):
         # Shadow
-        shadow = font_scale(125).render(str(count), True, FOGGRAY)
+        shadow = font_scale(175, COUNTDOWN_FONT).render(str(count), True, BLACK)
         shadow_surface = pygame.Surface(shadow.get_size(), pygame.SRCALPHA)
         shadow_surface.blit(shadow, (0, 0))
-        shadow_surface.set_alpha(150)
+        shadow_surface.set_alpha(200)
         shadow_rect = shadow_surface.get_rect(center=(WIDTH // 2 + 5, HEIGHT // 2 + 5))
         
         # Main text
-        text = font_scale(125).render(str(count), True, (220, 20, 60))
+        text = font_scale(175, COUNTDOWN_FONT).render(str(count), True, DARKORANGE)
         text_rect = text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
         
         self.surface.blit(shadow_surface, shadow_rect)
         self.surface.blit(text, text_rect)
 
     def draw_winner(self):   
-        winner_text = font_scale(40).render(f"Time: {self.elapsed_time:.2f} sec", True, GOLD)
-        restart_text = font_scale(40).render("Press SPACE to play again", True, GREEN)
+        text_display = font_scale(300).render("You Win!", True, DARKORANGE)
+        winner_text = font_scale(100).render(f"Time: {self.elapsed_time:.2f} sec", True, DARKGREEN)
+        restart_text = font_scale(40).render("Press SPACE to play again", True, WHITE)
         
-        winner_rect = winner_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
-        restart_rect = restart_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 50))
+        text_rect = text_display.get_rect(center=(WIDTH // 2, HEIGHT// 2 - 150))
+        winner_rect = winner_text.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+        restart_rect = restart_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 75))
         
+        self.surface.blit(text_display, text_rect)
         self.surface.blit(winner_text, winner_rect)
         self.surface.blit(restart_text, restart_rect)
 
