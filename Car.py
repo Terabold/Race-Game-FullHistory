@@ -1,15 +1,17 @@
 import math
 import pygame
 from Constants import *
+import numpy as np
 
 class Car(pygame.sprite.Sprite):
-    def __init__(self) -> None:
+    def __init__(self, x, y) -> None:  # Modified to take initial position
         super().__init__()
+        self.x = x  # Store initial position
+        self.y = y
         self.img = pygame.image.load(CAR_IMG).convert_alpha()
         self.image = pygame.transform.scale(self.img, (19, 38))
-        self.x, self.y = CAR_START_POS
         self.rect = self.image.get_rect(center=(self.x, self.y))
-        self.max_velocity = CARSPEED
+        self.max_velocity = MAXSPEED
         self.velocity = 0
         self.rotation_velocity = ROTATESPEED
         self.angle = 0
@@ -64,15 +66,19 @@ class Car(pygame.sprite.Sprite):
         elif self.velocity < 0:
             self.velocity = min(self.velocity + self.acceleration * 0.3, 0)
         self.move()
-
-    def reset(self):
-        self.x, self.y = CAR_START_POS
-        self.angle = 0
-        self.velocity = 0
-        self.drift_momentum = 0
+        
+    def reset(self, x=None, y=None):
+            """Reset car state with optional new position"""
+            if x is not None and y is not None:
+                self.x = x
+                self.y = y
+            self.velocity = 0
+            self.angle = 0
+            self.drift_momentum = 0
+            self.rect.center = (self.x, self.y)
 
     def handle_border_collision(self):
-        # Store original position and movement
+        # Store original position and movement to calculate the collision response
         original_x, original_y = self.x, self.y
         radians = math.radians(self.angle)
         
@@ -104,3 +110,4 @@ class Car(pygame.sprite.Sprite):
         car_mask = pygame.mask.from_surface(self.image)
         offset = (int(self.x - x), int(self.y - y))
         return mask.overlap(car_mask, offset)
+    

@@ -1,1 +1,5 @@
-__.vscode__/
+__pycache__/*   
+Data/
+wandb/
+__ai for later__/*
+__extra__/*

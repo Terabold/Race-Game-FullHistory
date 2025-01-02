@@ -2,7 +2,6 @@ import pygame
 import sys
 import time
 from Environment import Environment
-from save_time import TimeManager
 from Constants import *
 
 def main():
@@ -12,69 +11,72 @@ def main():
     pygame.display.set_caption("Racing Game")
     clock = pygame.time.Clock()
     environment = Environment(surface)
-    save_time = TimeManager()
     
-    running = True
-    car_moving = False
-    countdown_complete = False
-    game_over = False
+    game_active = False
+    countdown_active = False
 
-    while running:
+    while True:
         clock.tick(FPS)
-
-        # Handle quit and reset
+        
+        # Event handling
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                countdown_complete = False
-                game_over = False
-                environment.handle_music(False)
-
-        # Handle countdown
-        if not countdown_complete and not game_over:
-            environment.restart()
-            environment.countdown_sound.play()
+                pygame.quit()
+                sys.exit()
             
+            # Handle restart with R key
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_r:
+                    environment.restart_game()
+                    game_active = False
+                    countdown_active = False
+                    environment.handle_music(False)
+                
+                # Space to continue/retry level or restart game
+                elif event.key == pygame.K_SPACE:
+                    if environment.game_state == "level_complete":
+                        environment.handle_completion()
+                        if environment.game_state != "game_complete":
+                            game_active = False
+                            countdown_active = False
+                    elif environment.game_state == "game_complete":
+                        environment.restart_game()
+                        game_active = False
+                        countdown_active = False
+
+        # Handle countdown sequence
+        if not game_active and not countdown_active and environment.game_state == "running":
+            countdown_active = True
+            environment.countdown_sound.play()
             for i in range(3, 0, -1):
-                surface.fill((0, 0, 0))
+                surface.fill(environment.current_level_data["background_color"])
                 environment.draw()
                 environment.draw_countdown(i)
                 pygame.display.update()
                 pygame.time.wait(1000)
             
-            environment.start_time = time.time()
             environment.handle_music(True)
-            countdown_complete = True
-            car_moving = True
+            game_active = True
+            countdown_active = False
 
-        # Game updates
-        if car_moving and not game_over:
-            if environment.move():
-                game_over = True
-                car_moving = False
-                environment.handle_music(False)
-                save_time.save_time(environment.elapsed_time)
-            
-            if environment.start_time:
-                environment.update_time(time.time() - environment.start_time)
-
+        # Game state updates
+        if game_active and environment.game_state == "running":
+            environment.update()
+        
         # Rendering
+        surface.fill(environment.current_level_data["background_color"])
         environment.draw()
-        if game_over:
-            environment.draw_winner()
-        else:
+        
+        # Draw appropriate overlay based on game state
+        if environment.game_state == "running":
             environment.draw_ui()
+        elif environment.game_state == "level_complete":
+            environment.draw_level_complete()
+        elif environment.game_state == "game_complete":
+            environment.current_level = 0
+            environment.draw_game_complete()
+        
         pygame.display.update()
 
-        # Handle restart
-        if game_over and pygame.key.get_pressed()[pygame.K_SPACE]:
-            game_over = False
-            countdown_complete = False
-            car_moving = False
-            environment.restart()
-
-    pygame.quit()
-    sys.exit()
 if __name__ == "__main__":
     main()
