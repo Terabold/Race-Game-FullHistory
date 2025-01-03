@@ -1,5 +1,8 @@
-__pycache__/*   
-Data/
+__pycache__/
+
 wandb/
-__ai for later__/*
-__extra__/*
+
+ai for later/
+extra/
+
+gui_future.py

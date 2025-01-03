@@ -14,56 +14,51 @@ DARKGREEN = (0, 200, 0)
 BLACK = (0, 0, 0)
 
 LEVELS = [
-    {
-        "track_image": r"photo\track1.png", 
-        "border_image": r"photo\track1-border.png",
-        "car_start_pos": (380, 390),
-        "finishline_pos": [288, 440],
-        "finishline_size": (167, 28),
-        "target_time": 17.0,
-        "background_color": BLACK,  # Add this line
-        "Level": "Starter/Begginer Level"  # Add this line
-    },
-    {
-        "track_image": r"photo\track2.png",
-        "border_image": r"photo\track2-border.png",
-        "car_start_pos": (350, 200),
-        "finishline_pos": [275, 250],
-        "finishline_size": (150, 25),
-        "target_time": 20.0,
-        "background_color": BLACK,  # Add this line
-        "Level": "Medium/Hard Level"  # Add this line
-    },
-    {
-        "track_image": r"photo\track3.png",
-        "border_image": r"photo\track3-border.png",
-        "car_start_pos": (400, 200),
-        "finishline_pos": [310, 250],
-        "finishline_size": (175, 25),
-        "target_time": 20.0,
-        "background_color": BLACK,  # Add this line
-        "Level": "Experience Level"  # Add this line
-    },
-    {
-        "track_image": r"photo\track4.png",
-        "border_image": r"photo\track4-border.png",
-        "car_start_pos": (150, 250),
-        "finishline_pos": [80, 300],
-        "finishline_size": (130, 25),
-        "target_time": 17.0,
-        "background_color": BLACK, # Add this line
-        "Level": "Pro Level"  # Add this line
-    },
-    {
-        "track_image": r"photo\track5.png",
-        "border_image": r"photo\track5-border.png",
-        "car_start_pos": (600, 390),
-        "finishline_pos": [535, 440],
-        "finishline_size": (147, 25),
-        "target_time": 21.0,
-        "background_color": BLACK,  # Add this line
-        "Level": "Show-Off Level"  # Add this line
-    },
+{
+    "track_image": r"photo\track1.png", 
+    "border_image": r"photo\track1-border.png",
+    "car_start_pos": (380, 390),
+    "finishline_pos": [288, 440],
+    "finishline_size": (167, 28),
+    "target_time": 17.0,
+    "Level": "Beginner's Path" 
+},
+{
+    "track_image": r"photo\track2.png",
+    "border_image": r"photo\track2-border.png",
+    "car_start_pos": (350, 200),
+    "finishline_pos": [275, 250],
+    "finishline_size": (150, 25),
+    "target_time": 20.0,
+    "Level": "Challenger's Trial" 
+},
+{
+    "track_image": r"photo\track3.png",
+    "border_image": r"photo\track3-border.png",
+    "car_start_pos": (400, 200),
+    "finishline_pos": [310, 250],
+    "finishline_size": (175, 25),
+    "target_time": 20.0,
+    "Level": "Adventurer's Circuit" 
+},
+{
+    "track_image": r"photo\track4.png",
+    "border_image": r"photo\track4-border.png",
+    "car_start_pos": (150, 250),
+    "finishline_pos": [80, 300],
+    "finishline_size": (130, 25),
+    "target_time": 17.0,
+    "Level": "Elite Driver's Course" 
+},
+{
+    "track_image": r"photo\track5.png",
+    "border_image": r"photo\track5-border.png",
+    "car_start_pos": (600, 390),
+    "finishline_pos": [535, 440],
+    "finishline_size": (147, 25),
+    "target_time": 21.0,
+    "Level": "Master's Challenge" 
+}
 ]
 
 FONT = r"fonts\Default.otf"
