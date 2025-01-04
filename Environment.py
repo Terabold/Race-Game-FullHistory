@@ -3,21 +3,19 @@ import numpy as np
 import pygame
 from Constants import *
 from Car import Car
-from Ground import Ground
-import time
 
 def font_scale(size, Font=FONT):
     return pygame.font.Font(Font, size)
 
-def blit_rotate_center(game, image, top_left, angle):
+def blit_rotate_center(surface, image, top_left, angle):
     rotated_image = pygame.transform.rotate(image, angle)
     new_rect = rotated_image.get_rect(center=image.get_rect(topleft=top_left).center)
-    game.blit(rotated_image, new_rect.topleft)
+    surface.blit(rotated_image, new_rect.topleft)
 
 class Environment:
     def __init__(self, surface) -> None:
         self.surface = surface
-        self.ground_group = pygame.sprite.GroupSingle(Ground())
+        self.grass = pygame.image.load(GRASS).convert()
         self.current_level = 0
         
         start_pos = LEVELS[0]["car_start_pos"]
@@ -61,10 +59,10 @@ class Environment:
             self.game_state = "running"
         
     def draw(self):
-        self.ground_group.draw(self.surface)
+        self.surface.blit(self.grass, (0, 0))
         self.surface.blit(self.track, (0, 0))
-        self.surface.blit(self.track_border, (0, 0))
         self.surface.blit(self.finish_line, self.finish_line_position)
+        self.surface.blit(self.track_border, (0, 0))
         blit_rotate_center(self.surface, self.car.image, 
                           (self.car.x, self.car.y), self.car.angle)
         
@@ -128,7 +126,7 @@ class Environment:
 
     def draw_countdown(self, count):
         Level_Text = font_scale(100).render(self.current_level_data["Level"], True, GOLD)
-        Level_Rect = Level_Text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 200))
+        Level_Rect = Level_Text.get_rect(center=(WIDTH // 2, 200))
         self.surface.blit(Level_Text, Level_Rect)
 
         shadow = font_scale(175, COUNTDOWN_FONT).render(str(count), True, BLACK)

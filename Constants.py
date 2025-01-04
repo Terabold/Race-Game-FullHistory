@@ -17,48 +17,48 @@ LEVELS = [
 {
     "track_image": r"photo\track1.png", 
     "border_image": r"photo\track1-border.png",
-    "car_start_pos": (380, 390),
-    "finishline_pos": [288, 440],
-    "finishline_size": (167, 28),
-    "target_time": 17.0,
+    "car_start_pos": (350, 200),
+    "finishline_pos": [275, 250] ,
+    "finishline_size": (150, 25),
+    "target_time": 19.0,
     "Level": "Beginner's Path" 
 },
 {
     "track_image": r"photo\track2.png",
     "border_image": r"photo\track2-border.png",
-    "car_start_pos": (350, 200),
-    "finishline_pos": [275, 250],
-    "finishline_size": (150, 25),
+    "car_start_pos": (400, 240),
+    "finishline_pos": [300, 300],
+    "finishline_size": (200, 25),
     "target_time": 20.0,
     "Level": "Challenger's Trial" 
 },
 {
     "track_image": r"photo\track3.png",
     "border_image": r"photo\track3-border.png",
-    "car_start_pos": (400, 200),
-    "finishline_pos": [310, 250],
+    "car_start_pos": (380, 200),
+    "finishline_pos": [295, 250],
     "finishline_size": (175, 25),
-    "target_time": 20.0,
+    "target_time": 17.0,
     "Level": "Adventurer's Circuit" 
 },
 {
     "track_image": r"photo\track4.png",
     "border_image": r"photo\track4-border.png",
-    "car_start_pos": (150, 250),
-    "finishline_pos": [80, 300],
-    "finishline_size": (130, 25),
+    "car_start_pos": (510, 275),
+    "finishline_pos": [460, 325],
+    "finishline_size": (120, 25),
     "target_time": 17.0,
     "Level": "Elite Driver's Course" 
 },
 {
     "track_image": r"photo\track5.png",
     "border_image": r"photo\track5-border.png",
-    "car_start_pos": (600, 390),
-    "finishline_pos": [535, 440],
-    "finishline_size": (147, 25),
-    "target_time": 21.0,
+    "car_start_pos": (570, 175),
+    "finishline_pos": [500, 220],
+    "finishline_size": (135, 25),
+    "target_time": 20.0,
     "Level": "Master's Challenge" 
-}
+},
 ]
 
 FONT = r"fonts\Default.otf"

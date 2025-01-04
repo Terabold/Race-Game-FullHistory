@@ -1,6 +1,9 @@
 import pygame
 
-class Human_Agent():
+class Human_Agent:
+    def __init__(self):
+        self.action = 0  # Default action (no movement)
+
     def get_action(self):
         keys = pygame.key.get_pressed()
         
@@ -9,21 +12,24 @@ class Human_Agent():
         left = keys[pygame.K_a]
         right = keys[pygame.K_d]
         
+        # Update self.action based on key presses
         if forward and left:
-            return 5  # forward-left
+            self.action = 5  # forward-left
         elif forward and right:
-            return 6  # forward-right
+            self.action = 6  # forward-right
         elif backward and left:
-            return 7  # backward-left
+            self.action = 7  # backward-left
         elif backward and right:
-            return 8  # backward-right
+            self.action = 8  # backward-right
         elif forward:
-            return 1  # forward
+            self.action = 1  # forward
         elif backward:
-            return 2  # backward
+            self.action = 2  # backward
         elif left:
-            return 3  # left
+            self.action = 3  # left
         elif right:
-            return 4  # right
+            self.action = 4  # right
         else:
-            return 0  # no movement
+            self.action = 0  # no movement
+
+        return self.action
