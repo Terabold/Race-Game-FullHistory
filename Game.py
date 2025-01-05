@@ -7,12 +7,12 @@ from Constants import *
 def main():
     pygame.init()
     pygame.mixer.init()
-    surface = pygame.display.set_mode((WIDTH, HEIGHT))
+    surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.HWSURFACE|pygame.DOUBLEBUF)
     pygame.display.set_caption("Racing Game")
     clock = pygame.time.Clock()
     environment = Environment(surface)
     player = Human_Agent()
-
+    
     while True:
         clock.tick(FPS)
         
@@ -29,11 +29,12 @@ def main():
                         environment.handle_completion()
                     elif environment.game_state == "game_complete":
                         environment.restart_game()
+                elif event.key == pygame.K_ESCAPE:
+                    environment.toggle_pause()
         
         environment.update()
         if environment.game_state == "running":
             environment.move(player.get_action())
-        
         environment.draw()
         pygame.display.update()
 

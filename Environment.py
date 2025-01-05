@@ -8,16 +8,23 @@ def font_scale(size, Font=FONT):
     return pygame.font.Font(Font, size)
 
 def blit_rotate_center(surface, image, top_left, angle):
-    rotated_image = pygame.transform.rotate(image, angle)
-    new_rect = rotated_image.get_rect(center=image.get_rect(topleft=top_left).center)
+    """Optimized rotation and blitting"""
+    if isinstance(image.get_parent(), Car):
+        rotated_image = image.get_parent().get_rotated_image(angle)
+    else:
+        rotated_image = pygame.transform.rotate(image, angle)
+    new_rect = rotated_image.get_rect(
+        center=image.get_rect(topleft=top_left).center)
     surface.blit(rotated_image, new_rect.topleft)
 
 class Environment:
     def __init__(self, surface) -> None:
         self.surface = surface
         self.grass = pygame.image.load(GRASS).convert()
+        self.cached_grass = pygame.transform.scale(self.grass, (WIDTH, HEIGHT))
         self.current_level = 0
         
+        self.paused = False
         start_pos = LEVELS[0]["car_start_pos"]
         self.car = Car(*start_pos)
         self.car_group = pygame.sprite.GroupSingle(self.car)
@@ -26,26 +33,30 @@ class Environment:
         self.setup_sound()
         self.remaining_time = LEVELS[0]["target_time"]
         self.game_state = "countdown"
+        self.previous_state = None  # Store state before pausing
+
         
     def load_level(self, level_index):
-        level_data = LEVELS[level_index]
-        self.current_level_data = level_data
-        
-        self.track = pygame.image.load(level_data["track_image"]).convert_alpha()
-        self.track_border = pygame.image.load(level_data["border_image"]).convert_alpha()
-        self.track_border_mask = pygame.mask.from_surface(self.track_border)
-        
-        self.finish_line = pygame.image.load(FINISHLINE).convert_alpha()
-        finishline_width, finishline_height = level_data["finishline_size"]
-        self.finish_line = pygame.transform.scale(self.finish_line, (finishline_width, finishline_height))
-        self.finish_line_position = level_data["finishline_pos"]
-        self.finish_mask = pygame.mask.from_surface(self.finish_line)
-        
-        start_x, start_y = level_data["car_start_pos"]
-        self.car.reset(start_x, start_y)
-        
-        self.remaining_time = level_data["target_time"]
-        self.game_state = "countdown"
+            level_data = LEVELS[level_index]
+            self.current_level_data = level_data
+            
+            self.track = pygame.image.load(level_data["track_image"]).convert_alpha()
+            self.track_border = pygame.image.load(level_data["border_image"]).convert_alpha()
+            self.track_border_mask = pygame.mask.from_surface(self.track_border)
+            
+            self.finish_line = pygame.image.load(FINISHLINE).convert_alpha()
+            finishline_width, finishline_height = level_data["finishline_size"]
+            if self.finish_line.get_size() != (finishline_width, finishline_height):
+                self.finish_line = pygame.transform.scale(self.finish_line, 
+                                                        (finishline_width, finishline_height))
+            self.finish_line_position = level_data["finishline_pos"]
+            self.finish_mask = pygame.mask.from_surface(self.finish_line)
+            
+            start_x, start_y = level_data["car_start_pos"]
+            self.car.reset(start_x, start_y)
+            
+            self.remaining_time = level_data["target_time"]
+            self.game_state = "countdown"
 
     def run_countdown(self):
         if self.game_state == "countdown":
@@ -59,26 +70,78 @@ class Environment:
             self.game_state = "running"
         
     def draw(self):
-        self.surface.blit(self.grass, (0, 0))
-        self.surface.blit(self.track, (0, 0))
-        self.surface.blit(self.finish_line, self.finish_line_position)
-        self.surface.blit(self.track_border, (0, 0))
+        # Draw base game elements
+        self.surface.blits((
+            (self.cached_grass, (0, 0)),
+            (self.track, (0, 0)),
+            (self.finish_line, self.finish_line_position),
+            (self.track_border, (0, 0))
+        ))
         blit_rotate_center(self.surface, self.car.image, 
                           (self.car.x, self.car.y), self.car.angle)
         
-        if self.game_state == "running":
+        # Draw appropriate overlay based on game state
+        if self.game_state == "paused":
+            self.draw_pause_overlay()
+        elif self.game_state == "running":
             self.draw_ui()
         elif self.game_state == "level_complete":
             self.draw_level_complete()
         elif self.game_state == "game_complete":
             self.draw_game_complete()
 
-    def draw_ui(self):        
+    def draw_pause_overlay(self):
+        # Create semi-transparent overlay
+        overlay = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
+        overlay.fill((0, 0, 0, 128))
+        self.surface.blit(overlay, (0, 0))
+        
+        # Draw pause text
+        paused_text = font_scale(75).render("GAME PAUSED", True, GREEN)
+        resume_text = font_scale(30).render("Press ESC to Resume", True, WHITE)
+        time_text = font_scale(30).render(
+            f"Time Remaining: {self.remaining_time:.1f}", True, WHITE)
+        
+        paused_rect = paused_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 - 50))
+        resume_rect = resume_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 20))
+        time_rect = time_text.get_rect(center=(WIDTH // 2, HEIGHT // 2 + 70))
+        
+        self.surface.blit(paused_text, paused_rect)
+        self.surface.blit(resume_text, resume_rect)
+        self.surface.blit(time_text, time_rect)
+
+    def draw_ui(self):  
+        #timer      
         timer_color = RED if self.remaining_time < 3 else GREEN
         timer_text = font_scale(27).render(
             f"Time Remaining: {self.remaining_time:.1f}", 
             True, timer_color)
         self.surface.blit(timer_text, (10, 5))
+
+        #speed
+        speed_percent = abs(self.car.velocity) / self.car.max_velocity * 100
+        speed_color = GREEN if speed_percent < 80 else ORANGE if speed_percent < 95 else RED
+        speed_text = font_scale(27).render(
+            f"Speed: {speed_percent:.0f}%", 
+            True, speed_color)
+        self.surface.blit(speed_text, (10, 35))
+
+    def toggle_pause(self):
+        if self.game_state == "paused":
+            self.game_state = self.previous_state
+            if self.game_state == "running":
+                self.handle_music(True)
+        elif self.game_state in ["running", "countdown"]:
+            self.previous_state = self.game_state
+            self.game_state = "paused"
+            self.handle_music(False)
+            
+    def draw_paused(self):
+        #paused text      
+        paused_text = font_scale(75).render(
+            f"Game Paused, Time Remaining: {self.remaining_time:.1f}", 
+            True, GREEN)
+        self.surface.blit(paused_text, (WIDTH // 2, HEIGHT // 2))
 
     def draw_level_complete(self):
         surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
