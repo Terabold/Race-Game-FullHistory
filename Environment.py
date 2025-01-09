@@ -3,6 +3,7 @@ import numpy as np
 import pygame
 from Constants import *
 from Car import Car
+from Checkpoint import Checkpoint
 
 def font_scale(size, Font=FONT):
     return pygame.font.Font(Font, size)
@@ -11,7 +12,6 @@ def blit_rotate_center(game, image, top_left, angle):
     rotated_image = pygame.transform.rotate(image, angle)
     new_rect = rotated_image.get_rect(center=image.get_rect(topleft=top_left).center)
     game.blit(rotated_image, new_rect.topleft)
-
 
 class Environment:
     def __init__(self, surface, sound_enabled=True, auto_respawn=False, car_color="Red") -> None:
@@ -24,14 +24,12 @@ class Environment:
         
         self.paused = False
         start_pos = LEVELS[0]["car_start_pos"]
-        self.car = Car(start_pos[0], start_pos[1], car_color)  # Pass car_color here
+        self.car = Car(start_pos[0], start_pos[1], car_color)
         self.car_group = pygame.sprite.GroupSingle(self.car)
         
-        # Load checkpoint image
-        self.checkpoint_image = pygame.image.load(CHECKPOINT).convert_alpha()
-        self.checkpoints = []
-        self.checkpoint_masks = []
-        self.current_checkpoint = 0
+        # Initialize checkpoint group
+        self.checkpoint_group = pygame.sprite.Group()
+        self.current_checkpoint_index = 0
         
         self.load_level(self.current_level)
         self.setup_sound()
@@ -63,24 +61,43 @@ class Environment:
         self.game_state = "countdown"
         
         # Clear existing checkpoints
-        self.checkpoints = []
-        self.checkpoint_masks = []
-        self.current_checkpoint = 0
+        self.checkpoint_group.empty()
+        self.current_checkpoint_index = 0
         
-        # Load checkpoints if they exist for this level
+        # Load checkpoints
         if "checkpoints" in level_data:
-            for checkpoint in level_data["checkpoints"]:
-                # Create checkpoint surface using the checkpoint image
-                checkpoint_img = pygame.transform.scale(self.checkpoint_image, checkpoint["size"])
-                checkpoint_surface = pygame.Surface(checkpoint["size"], pygame.SRCALPHA)
-                checkpoint_surface.blit(checkpoint_img, (0, 0))                
-                self.checkpoints.append({
-                    "surface": checkpoint_surface,
-                    "pos": checkpoint["pos"],
-                    "passed": False,
-                    "size": checkpoint["size"]
-                })
-                self.checkpoint_masks.append(pygame.mask.from_surface(checkpoint_surface))
+            for i, checkpoint_data in enumerate(level_data["checkpoints"]):
+                checkpoint = Checkpoint(
+                    checkpoint_data["pos"],
+                    checkpoint_data["size"],
+                    i
+                )
+                self.checkpoint_group.add(checkpoint)
+
+    def get_closest_active_checkpoint(self):
+        """Get the next unpassed checkpoint closest to the car"""
+        active_checkpoints = [cp for cp in self.checkpoint_group.sprites() 
+                            if not cp.passed and cp.index >= self.current_checkpoint_index]
+        if not active_checkpoints:
+            return None
+            
+        # Sort checkpoints by both index and distance
+        active_checkpoints.sort(key=lambda cp: (
+            cp.index != self.current_checkpoint_index,  # Prioritize current index
+            cp.get_distance_to(self.car.x, self.car.y)  # Then by distance
+        ))
+        
+        return active_checkpoints[0] if active_checkpoints else None
+    
+    def check_checkpoints(self):
+        closest_checkpoint = self.get_closest_active_checkpoint()
+        if not closest_checkpoint:
+            return
+            
+        if self.car.collide(closest_checkpoint.mask, *closest_checkpoint.pos):
+            closest_checkpoint.passed = True
+            self.current_checkpoint_index = closest_checkpoint.index + 1
+            self.checkpoint_sound.play()
 
     def run_countdown(self):
         if self.game_state == "countdown":
@@ -93,23 +110,6 @@ class Environment:
             self.handle_music(True)
             self.game_state = "running"
 
-    def check_checkpoints(self):
-        if self.current_checkpoint >= len(self.checkpoints):
-            return
-            
-        checkpoint = self.checkpoints[self.current_checkpoint]
-        if not checkpoint["passed"]:
-            collision = self.car.collide(
-                self.checkpoint_masks[self.current_checkpoint],
-                checkpoint["pos"][0],
-                checkpoint["pos"][1]
-            )
-            
-            if collision:
-                checkpoint["passed"] = True
-                self.current_checkpoint += 1
-                self.checkpoint_sound.play()             
-                  
     def draw(self):
         # Draw base game elements
         self.surface.blits((
@@ -118,11 +118,10 @@ class Environment:
             (self.finish_line, self.finish_line_position),
         ))
 
-        # Draw checkpoints
-        for checkpoint in self.checkpoints:
-            if not checkpoint["passed"]:
-                # Create a copy of the checkpoint surface for animation
-                self.surface.blit(checkpoint["surface"], checkpoint["pos"])
+        # Only draw the closest active checkpoint
+        closest_checkpoint = self.get_closest_active_checkpoint()
+        if closest_checkpoint:
+            self.surface.blit(closest_checkpoint.image, closest_checkpoint.rect)
         
         # Draw track border after checkpoints
         self.surface.blit(self.track_border, (0, 0))
@@ -178,13 +177,6 @@ class Environment:
             self.previous_state = self.game_state
             self.game_state = "paused"
             self.handle_music(False)
-            
-    def draw_paused(self):
-        #paused text      
-        paused_text = font_scale(75).render(
-            f"Game Paused, Time Remaining: {self.remaining_time:.1f}", 
-            True, GREEN)
-        self.surface.blit(paused_text, (WIDTH // 2, HEIGHT // 2))
 
     def draw_level_complete(self):
         surface = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
@@ -232,7 +224,7 @@ class Environment:
 
     def draw_countdown(self, count):
         Level_Text = font_scale(100).render(self.current_level_data["Level"], True, GOLD)
-        Level_Rect = Level_Text.get_rect(center=(WIDTH // 2, 200))
+        Level_Rect = Level_Text.get_rect(center=(WIDTH // 2, 75))
         self.surface.blit(Level_Text, Level_Rect)
 
         shadow = font_scale(175, COUNTDOWN_FONT).render(str(count), True, BLACK)
@@ -321,7 +313,8 @@ class Environment:
             if finish_pos[1] == 0:
                 self.car.handle_border_collision()
             else:
-                if all(cp["passed"] for cp in self.checkpoints):
+                # Check if all checkpoints in the checkpoint group have been passed
+                if all(cp.passed for cp in self.checkpoint_group.sprites()):
                     self.win_sound.play()
                     self.handle_music(False)
                     if self.current_level < len(LEVELS) - 1:
