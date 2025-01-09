@@ -7,15 +7,11 @@ from Car import Car
 def font_scale(size, Font=FONT):
     return pygame.font.Font(Font, size)
 
-def blit_rotate_center(surface, image, top_left, angle):
-    """Optimized rotation and blitting"""
-    if isinstance(image.get_parent(), Car):
-        rotated_image = image.get_parent().get_rotated_image(angle)
-    else:
-        rotated_image = pygame.transform.rotate(image, angle)
-    new_rect = rotated_image.get_rect(
-        center=image.get_rect(topleft=top_left).center)
-    surface.blit(rotated_image, new_rect.topleft)
+def blit_rotate_center(game, image, top_left, angle):
+    rotated_image = pygame.transform.rotate(image, angle)
+    new_rect = rotated_image.get_rect(center=image.get_rect(topleft=top_left).center)
+    game.blit(rotated_image, new_rect.topleft)
+
 
 class Environment:
     def __init__(self, surface) -> None:
@@ -29,34 +25,60 @@ class Environment:
         self.car = Car(*start_pos)
         self.car_group = pygame.sprite.GroupSingle(self.car)
         
+        # Load checkpoint image
+        self.checkpoint_image = pygame.image.load(CHECKPOINT).convert_alpha()
+        self.checkpoints = []
+        self.checkpoint_masks = []
+        self.current_checkpoint = 0
+        
         self.load_level(self.current_level)
         self.setup_sound()
         self.remaining_time = LEVELS[0]["target_time"]
         self.game_state = "countdown"
-        self.previous_state = None  # Store state before pausing
-
+        self.previous_state = None
         
     def load_level(self, level_index):
-            level_data = LEVELS[level_index]
-            self.current_level_data = level_data
-            
-            self.track = pygame.image.load(level_data["track_image"]).convert_alpha()
-            self.track_border = pygame.image.load(level_data["border_image"]).convert_alpha()
-            self.track_border_mask = pygame.mask.from_surface(self.track_border)
-            
-            self.finish_line = pygame.image.load(FINISHLINE).convert_alpha()
-            finishline_width, finishline_height = level_data["finishline_size"]
-            if self.finish_line.get_size() != (finishline_width, finishline_height):
-                self.finish_line = pygame.transform.scale(self.finish_line, 
-                                                        (finishline_width, finishline_height))
-            self.finish_line_position = level_data["finishline_pos"]
-            self.finish_mask = pygame.mask.from_surface(self.finish_line)
-            
-            start_x, start_y = level_data["car_start_pos"]
-            self.car.reset(start_x, start_y)
-            
-            self.remaining_time = level_data["target_time"]
-            self.game_state = "countdown"
+        level_data = LEVELS[level_index]
+        self.current_level_data = level_data
+        
+        # Basic level loading
+        self.track = pygame.image.load(level_data["track_image"]).convert_alpha()
+        self.track_border = pygame.image.load(level_data["border_image"]).convert_alpha()
+        self.track_border_mask = pygame.mask.from_surface(self.track_border)
+        
+        self.finish_line = pygame.image.load(FINISHLINE).convert_alpha()
+        finishline_width, finishline_height = level_data["finishline_size"]
+        self.finish_line = pygame.transform.scale(self.finish_line, (finishline_width, finishline_height))
+        self.finish_line_position = level_data["finishline_pos"]
+        self.finish_mask = pygame.mask.from_surface(self.finish_line)
+        
+        # Reset car position
+        start_x, start_y = level_data["car_start_pos"]
+        self.car.reset(start_x, start_y)
+        
+        # Reset game state
+        self.remaining_time = level_data["target_time"]
+        self.game_state = "countdown"
+        
+        # Clear existing checkpoints
+        self.checkpoints = []
+        self.checkpoint_masks = []
+        self.current_checkpoint = 0
+        
+        # Load checkpoints if they exist for this level
+        if "checkpoints" in level_data:
+            for checkpoint in level_data["checkpoints"]:
+                # Create checkpoint surface using the checkpoint image
+                checkpoint_img = pygame.transform.scale(self.checkpoint_image, checkpoint["size"])
+                checkpoint_surface = pygame.Surface(checkpoint["size"], pygame.SRCALPHA)
+                checkpoint_surface.blit(checkpoint_img, (0, 0))                
+                self.checkpoints.append({
+                    "surface": checkpoint_surface,
+                    "pos": checkpoint["pos"],
+                    "passed": False,
+                    "size": checkpoint["size"]
+                })
+                self.checkpoint_masks.append(pygame.mask.from_surface(checkpoint_surface))
 
     def run_countdown(self):
         if self.game_state == "countdown":
@@ -68,19 +90,48 @@ class Environment:
                 pygame.time.wait(1000)
             self.handle_music(True)
             self.game_state = "running"
-        
+
+
+    def check_checkpoints(self):
+        if self.current_checkpoint >= len(self.checkpoints):
+            return
+            
+        checkpoint = self.checkpoints[self.current_checkpoint]
+        if not checkpoint["passed"]:
+            collision = self.car.collide(
+                self.checkpoint_masks[self.current_checkpoint],
+                checkpoint["pos"][0],
+                checkpoint["pos"][1]
+            )
+            
+            if collision:
+                checkpoint["passed"] = True
+                self.current_checkpoint += 1
+                self.checkpoint_sound.play()
+                
+                  
     def draw(self):
         # Draw base game elements
         self.surface.blits((
             (self.cached_grass, (0, 0)),
             (self.track, (0, 0)),
             (self.finish_line, self.finish_line_position),
-            (self.track_border, (0, 0))
         ))
+
+        # Draw checkpoints
+        for checkpoint in self.checkpoints:
+            if not checkpoint["passed"]:
+                # Create a copy of the checkpoint surface for animation
+                self.surface.blit(checkpoint["surface"], checkpoint["pos"])
+        
+        # Draw track border after checkpoints
+        self.surface.blit(self.track_border, (0, 0))
+        
+        # Draw car
         blit_rotate_center(self.surface, self.car.image, 
                           (self.car.x, self.car.y), self.car.angle)
         
-        # Draw appropriate overlay based on game state
+        # Draw UI overlays
         if self.game_state == "paused":
             self.draw_pause_overlay()
         elif self.game_state == "running":
@@ -117,14 +168,6 @@ class Environment:
             f"Time Remaining: {self.remaining_time:.1f}", 
             True, timer_color)
         self.surface.blit(timer_text, (10, 5))
-
-        #speed
-        speed_percent = abs(self.car.velocity) / self.car.max_velocity * 100
-        speed_color = GREEN if speed_percent < 80 else ORANGE if speed_percent < 95 else RED
-        speed_text = font_scale(27).render(
-            f"Speed: {speed_percent:.0f}%", 
-            True, speed_color)
-        self.surface.blit(speed_text, (10, 35))
 
     def toggle_pause(self):
         if self.game_state == "paused":
@@ -235,6 +278,7 @@ class Environment:
                     self.game_state = "level_complete"
                     self.handle_music(False)
             self.check_collision()
+            self.check_checkpoints()
 
     def move(self, action):
         if self.game_state != "running":
@@ -272,13 +316,16 @@ class Environment:
             if finish_pos[1] == 0:
                 self.car.handle_border_collision()
             else:
-                self.win_sound.play()
-                self.handle_music(False)
-                if self.current_level < len(LEVELS) - 1:
-                    self.game_state = "level_complete"
+                if all(cp["passed"] for cp in self.checkpoints):
+                    self.win_sound.play()
+                    self.handle_music(False)
+                    if self.current_level < len(LEVELS) - 1:
+                        self.game_state = "level_complete"
+                    else:
+                        self.game_state = "game_complete"
+                    return True
                 else:
-                    self.game_state = "game_complete"
-                return True
+                    self.car.handle_border_collision()
         return False
 
     def setup_sound(self):
@@ -290,6 +337,8 @@ class Environment:
         self.collide_sound.set_volume(4)
         self.win_sound = pygame.mixer.Sound(WIN_SOUND)
         self.win_sound.set_volume(0.2)
+        self.checkpoint_sound = pygame.mixer.Sound(CHECKPOINT_SOUND)
+        self.checkpoint_sound.set_volume(3)
         self.is_music_playing = False
 
     def handle_music(self, play=True):
@@ -299,3 +348,55 @@ class Environment:
         elif not play:
             self.background_music.stop()
             self.is_music_playing = False
+
+    def state(self):
+        # Car state values
+        car_pos = 2                    # x, y = 2
+        car_velocity = 1               # velocity = 1
+        car_angle = 1                  # angle = 1
+        car_drift = 2                  # drift_momentum, drift_friction = 2
+        
+        # Track/game values
+        finish_line = 4                # x, y, width, height = 4
+        border_collisions = 3          # recovery_bounce, recovery_slowdown, recovery_straighten = 3
+        game_state = 4                 # remaining_time, current_level, max_velocity, acceleration = 4
+        
+        total = car_pos + car_velocity + car_angle + car_drift + finish_line + border_collisions + game_state
+        # total = 17
+        
+        state_list = []
+        
+        # Car position and movement (0-5)
+        state_list.extend([
+            self.car.x / WIDTH,                    # Normalize positions
+            self.car.y / HEIGHT,
+            self.car.velocity / self.car.max_velocity,
+            self.car.angle / 360.0,
+            self.car.drift_momentum / self.car.max_velocity,
+            self.car.drift_friction
+        ])
+        
+        # Finish line info (6-9)
+        state_list.extend([
+            self.finish_line_position[0] / WIDTH,
+            self.finish_line_position[1] / HEIGHT,
+            self.current_level_data["finishline_size"][0] / WIDTH,
+            self.current_level_data["finishline_size"][1] / HEIGHT
+        ])
+        
+        # Collision physics (10-12)
+        state_list.extend([
+            self.car.recovery_bounce,
+            self.car.recovery_slowdown,
+            self.car.recovery_straighten
+        ])
+        
+        # Game state (13-16)
+        state_list.extend([
+            self.remaining_time / self.current_level_data["target_time"],
+            self.current_level / len(LEVELS),
+            self.car.max_velocity / MAXSPEED,
+            self.car.acceleration / ACCELERATION
+        ])
+        
+        return torch.tensor(state_list, dtype=torch.float32)

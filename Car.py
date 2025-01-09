@@ -38,19 +38,18 @@ class Car(pygame.sprite.Sprite):
                 self.drift_momentum += self.velocity * self.drift_factor
 
     def move(self):
-        # Regular movement
-        radians = math.radians(self.angle)
-        vertical = math.cos(radians) * self.velocity
-        horizontal = math.sin(radians) * self.velocity
+        # Combine movement calculations
+        base_angle = math.radians(self.angle)
+        drift_angle = base_angle + math.pi/2  # 90 degrees in radians
         
-        # Drift movement
-        drift_radians = math.radians(self.angle + 90)
-        drift_vertical = math.cos(drift_radians) * self.drift_momentum
-        drift_horizontal = math.sin(drift_radians) * self.drift_momentum
+        # Calculate all movements at once
+        total_vertical = (math.cos(base_angle) * self.velocity + 
+                         math.cos(drift_angle) * self.drift_momentum)
+        total_horizontal = (math.sin(base_angle) * self.velocity + 
+                          math.sin(drift_angle) * self.drift_momentum)
         
-        # Apply movement
-        self.y -= (vertical + drift_vertical)
-        self.x -= (horizontal + drift_horizontal)
+        self.y -= total_vertical
+        self.x -= total_horizontal
         self.drift_momentum *= self.drift_friction
 
     def accelerate(self, forward=True):

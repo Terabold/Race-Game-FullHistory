@@ -7,7 +7,7 @@ from Constants import *
 def main():
     pygame.init()
     pygame.mixer.init()
-    surface = pygame.display.set_mode((WIDTH, HEIGHT), pygame.HWSURFACE|pygame.DOUBLEBUF)
+    surface = pygame.display.set_mode((WIDTH, HEIGHT))
     pygame.display.set_caption("Racing Game")
     clock = pygame.time.Clock()
     environment = Environment(surface)
