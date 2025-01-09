@@ -12,6 +12,15 @@ ORANGE = (255, 165, 0)
 DARKORANGE = (255, 140, 0)
 DARKGREEN = (0, 200, 0)
 BLACK = (0, 0, 0)
+GRAY = (128, 128, 128)
+
+CAR_COLORS = {
+    "Red": r"photo/red-car.png",
+    "Blue": r"photo/car-blue.png",
+    "Green": r"photo/green-car.png",
+    "Yellow": r"photo/car.png",
+    "ice": r"photo/ice-car.png",
+}
 
 LEVELS = [
 {
@@ -116,9 +125,11 @@ CAR_IMG = r"photo/car.png"
 FINISHLINE = r'photo/finish.png'
 GRASS = r'photo\grass2.jpg'
 CHECKPOINT = r'photo\checkpoint.jpg'
+MENU = r'photo\menu.jpg'
 # Sound
 WIN_SOUND = r'sound/victory.wav'
 COUNTDOWN_SOUND = r'sound/countdown.mp3'
 BACKGROUND_MUSIC = r'sound/background_music.mp3'
 COLLIDE_SOUND = r'sound/collide.mp3'
 CHECKPOINT_SOUND = r'sound\CHECKPOINT_SOUND.mp3'
+LOBBY_MUSIC = r'sound\lobby_music.mp3'

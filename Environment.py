@@ -14,15 +14,17 @@ def blit_rotate_center(game, image, top_left, angle):
 
 
 class Environment:
-    def __init__(self, surface) -> None:
+    def __init__(self, surface, sound_enabled=True, auto_respawn=False, car_color="Red") -> None:
         self.surface = surface
         self.grass = pygame.image.load(GRASS).convert()
         self.cached_grass = pygame.transform.scale(self.grass, (WIDTH, HEIGHT))
         self.current_level = 0
+        self.auto_respawn = auto_respawn
+        self.sound_enabled = sound_enabled
         
         self.paused = False
         start_pos = LEVELS[0]["car_start_pos"]
-        self.car = Car(*start_pos)
+        self.car = Car(start_pos[0], start_pos[1], car_color)  # Pass car_color here
         self.car_group = pygame.sprite.GroupSingle(self.car)
         
         # Load checkpoint image
@@ -91,7 +93,6 @@ class Environment:
             self.handle_music(True)
             self.game_state = "running"
 
-
     def check_checkpoints(self):
         if self.current_checkpoint >= len(self.checkpoints):
             return
@@ -107,8 +108,7 @@ class Environment:
             if collision:
                 checkpoint["passed"] = True
                 self.current_checkpoint += 1
-                self.checkpoint_sound.play()
-                
+                self.checkpoint_sound.play()             
                   
     def draw(self):
         # Draw base game elements
@@ -163,7 +163,7 @@ class Environment:
 
     def draw_ui(self):  
         #timer      
-        timer_color = RED if self.remaining_time < 3 else GREEN
+        timer_color = RED if self.remaining_time < 1 else GREEN
         timer_text = font_scale(27).render(
             f"Time Remaining: {self.remaining_time:.1f}", 
             True, timer_color)
@@ -275,8 +275,13 @@ class Environment:
             if self.remaining_time > 0:
                 self.remaining_time -= 1/FPS
                 if self.remaining_time <= 0:
-                    self.game_state = "level_complete"
-                    self.handle_music(False)
+                    if self.auto_respawn:
+                        self.restart_level()
+                        self.remaining_time = self.current_level_data["target_time"]
+                        self.game_state = "countdown"
+                    else:
+                        self.game_state = "level_complete"
+                        self.handle_music(False)
             self.check_collision()
             self.check_checkpoints()
 
@@ -329,16 +334,23 @@ class Environment:
         return False
 
     def setup_sound(self):
+        volume_multiplier = 1 if self.sound_enabled else 0
+        
         self.background_music = pygame.mixer.Sound(BACKGROUND_MUSIC)
-        self.background_music.set_volume(0.01)
+        self.background_music.set_volume(0.01 * volume_multiplier)
+        
         self.countdown_sound = pygame.mixer.Sound(COUNTDOWN_SOUND)
-        self.countdown_sound.set_volume(0.1)
+        self.countdown_sound.set_volume(0.1 * volume_multiplier)
+        
         self.collide_sound = pygame.mixer.Sound(COLLIDE_SOUND)
-        self.collide_sound.set_volume(4)
+        self.collide_sound.set_volume(4 * volume_multiplier)
+        
         self.win_sound = pygame.mixer.Sound(WIN_SOUND)
-        self.win_sound.set_volume(0.2)
+        self.win_sound.set_volume(0.2 * volume_multiplier)
+        
         self.checkpoint_sound = pygame.mixer.Sound(CHECKPOINT_SOUND)
-        self.checkpoint_sound.set_volume(3)
+        self.checkpoint_sound.set_volume(0.3 * volume_multiplier)
+        
         self.is_music_playing = False
 
     def handle_music(self, play=True):
