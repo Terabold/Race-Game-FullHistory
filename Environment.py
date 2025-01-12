@@ -4,6 +4,7 @@ import pygame
 from Constants import *
 from Car import Car
 from Checkpoint import Checkpoint
+from TimeBonus import TimeBonus
 
 def font_scale(size, Font=FONT):
     return pygame.font.Font(Font, size)
@@ -25,17 +26,23 @@ class Environment:
         self.paused = False
         start_pos = LEVELS[0]["car_start_pos"]
         self.car = Car(start_pos[0], start_pos[1], car_color)
-        self.car_group = pygame.sprite.GroupSingle(self.car)
         
         # Initialize checkpoint group
         self.checkpoint_group = pygame.sprite.Group()
         self.current_checkpoint_index = 0
         
-        self.load_level(self.current_level)
-        self.setup_sound()
+        # Initialize time bonus group before loading level
+        self.time_bonus_group = pygame.sprite.Group()
+        
         self.remaining_time = LEVELS[0]["target_time"]
         self.game_state = "countdown"
         self.previous_state = None
+        
+        # Setup sound before loading level
+        self.setup_sound()
+        
+        # Load level last after all groups are initialized
+        self.load_level(self.current_level)
         
     def load_level(self, level_index):
         level_data = LEVELS[level_index]
@@ -73,6 +80,20 @@ class Environment:
                     i
                 )
                 self.checkpoint_group.add(checkpoint)
+
+        # Clear and regenerate time bonuses
+        self.time_bonus_group.empty()
+        track_name = f"track{level_index + 1}"
+        
+        # Debug print to verify points are available
+        print(f"Loading bonuses for {track_name}")
+        print(f"Available positions: {len(TRACK_BONUS_POINTS.get(track_name, []))}")
+        
+        time_bonus_generator = TimeBonus(0, 0)  # Create a dummy bonus to access the generator
+        time_bonuses = time_bonus_generator.generate_bonuses(track_name, num_bonuses=10)
+        print(f"Generated {len(time_bonuses)} time bonuses")
+        
+        self.time_bonus_group.add(time_bonuses)
 
     def get_closest_active_checkpoint(self):
         """Get the next unpassed checkpoint closest to the car"""
@@ -122,13 +143,16 @@ class Environment:
         closest_checkpoint = self.get_closest_active_checkpoint()
         if closest_checkpoint:
             self.surface.blit(closest_checkpoint.image, closest_checkpoint.rect)
+
+        # Draw time bonuses - ensure they're drawn before the track border
+        self.time_bonus_group.draw(self.surface)
         
-        # Draw track border after checkpoints
+        # Draw track border after time bonuses
         self.surface.blit(self.track_border, (0, 0))
         
         # Draw car
         blit_rotate_center(self.surface, self.car.image, 
-                          (self.car.x, self.car.y), self.car.angle)
+                        (self.car.x, self.car.y), self.car.angle)
         
         # Draw UI overlays
         if self.game_state == "paused":
@@ -139,6 +163,7 @@ class Environment:
             self.draw_level_complete()
         elif self.game_state == "game_complete":
             self.draw_game_complete()
+            
 
     def draw_pause_overlay(self):
         # Create semi-transparent overlay
@@ -167,6 +192,11 @@ class Environment:
             f"Time Remaining: {self.remaining_time:.1f}", 
             True, timer_color)
         self.surface.blit(timer_text, (10, 5))
+
+        #active bonuses
+        bonus_color = YELLOW if self.remaining_time == 1 else GREEN
+        active_bonus = font_scale(36).render(f"Active Bonuses: {len(self.time_bonus_group)}", True, bonus_color)
+        self.surface.blit(active_bonus, (10, 40))
 
     def toggle_pause(self):
         if self.game_state == "paused":
@@ -274,8 +304,9 @@ class Environment:
                     else:
                         self.game_state = "level_complete"
                         self.handle_music(False)
-            self.check_collision()
-            self.check_checkpoints()
+                self.check_collision()
+                self.check_checkpoints()
+                self.check_time_bonuses()
 
     def move(self, action):
         if self.game_state != "running":
@@ -325,7 +356,14 @@ class Environment:
                 else:
                     self.car.handle_border_collision()
         return False
-
+    
+    def check_time_bonuses(self):
+        for bonus in self.time_bonus_group.sprites():
+            if self.car.collide(bonus.mask, bonus.rect.x, bonus.rect.y):
+                self.remaining_time += 2.0  # Add 2 seconds
+                self.time_bonus_sound.play()
+                bonus.kill()
+                
     def setup_sound(self):
         volume_multiplier = 1 if self.sound_enabled else 0
         
@@ -343,7 +381,10 @@ class Environment:
         
         self.checkpoint_sound = pygame.mixer.Sound(CHECKPOINT_SOUND)
         self.checkpoint_sound.set_volume(0.3 * volume_multiplier)
-        
+
+        self.time_bonus_sound = pygame.mixer.Sound(TIME_BONUS_SOUND)  
+        self.time_bonus_sound.set_volume(0.2 * (1 if self.sound_enabled else 0))
+
         self.is_music_playing = False
 
     def handle_music(self, play=True):
@@ -355,53 +396,25 @@ class Environment:
             self.is_music_playing = False
 
     def state(self):
-        # Car state values
-        car_pos = 2                    # x, y = 2
-        car_velocity = 1               # velocity = 1
-        car_angle = 1                  # angle = 1
-        car_drift = 2                  # drift_momentum, drift_friction = 2
+        """Returns both screen tensor and state parameters for AI training"""
+        # Get the game screen as a PyTorch tensor
+        screen = pygame.surfarray.array3d(self.surface)
+        # Transpose from (width, height, channel) to (channel, height, width)
+        screen = screen.transpose((2, 0, 1))
+        # Convert to float and normalize to [0,1]
+        screen_tensor = torch.FloatTensor(screen) / 255.0
         
-        # Track/game values
-        finish_line = 4                # x, y, width, height = 4
-        border_collisions = 3          # recovery_bounce, recovery_slowdown, recovery_straighten = 3
-        game_state = 4                 # remaining_time, current_level, max_velocity, acceleration = 4
-        
-        total = car_pos + car_velocity + car_angle + car_drift + finish_line + border_collisions + game_state
-        # total = 17
-        
-        state_list = []
-        
-        # Car position and movement (0-5)
-        state_list.extend([
-            self.car.x / WIDTH,                    # Normalize positions
-            self.car.y / HEIGHT,
-            self.car.velocity / self.car.max_velocity,
-            self.car.angle / 360.0,
+        # Get state parameters as before
+        state_list = [
+            self.car.x / WIDTH,                    
+            self.car.y / HEIGHT,                   
+            self.car.velocity / self.car.max_velocity,  
+            self.car.angle / 360.0,                
             self.car.drift_momentum / self.car.max_velocity,
-            self.car.drift_friction
-        ])
+            self.finish_line_position[0] / WIDTH,  
+            self.finish_line_position[1] / HEIGHT, 
+            self.car.acceleration / ACCELERATION,   
+        ]
+        state_params = torch.tensor(state_list, dtype=torch.float32)
         
-        # Finish line info (6-9)
-        state_list.extend([
-            self.finish_line_position[0] / WIDTH,
-            self.finish_line_position[1] / HEIGHT,
-            self.current_level_data["finishline_size"][0] / WIDTH,
-            self.current_level_data["finishline_size"][1] / HEIGHT
-        ])
-        
-        # Collision physics (10-12)
-        state_list.extend([
-            self.car.recovery_bounce,
-            self.car.recovery_slowdown,
-            self.car.recovery_straighten
-        ])
-        
-        # Game state (13-16)
-        state_list.extend([
-            self.remaining_time / self.current_level_data["target_time"],
-            self.current_level / len(LEVELS),
-            self.car.max_velocity / MAXSPEED,
-            self.car.acceleration / ACCELERATION
-        ])
-        
-        return torch.tensor(state_list, dtype=torch.float32)
+        return screen_tensor, state_params

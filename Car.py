@@ -4,11 +4,10 @@ from Constants import *
 import numpy as np
 
 class Car(pygame.sprite.Sprite):
-    def __init__(self, x, y, car_color="Red") -> None:  # Modified to accept car_color
+    def __init__(self, x, y, car_color = "red") -> None:  # Modified to take initial position
         super().__init__()
-        self.x = x
+        self.x = x  # Store initial position
         self.y = y
-        # Use car color from CAR_COLORS dictionary in Constants.py
         self.img = pygame.image.load(CAR_COLORS[car_color]).convert_alpha()
         self.image = pygame.transform.scale(self.img, (19, 38))
         self.rect = self.image.get_rect(center=(self.x, self.y))
@@ -39,18 +38,19 @@ class Car(pygame.sprite.Sprite):
                 self.drift_momentum += self.velocity * self.drift_factor
 
     def move(self):
-        # Combine movement calculations
-        base_angle = math.radians(self.angle)
-        drift_angle = base_angle + math.pi/2  # 90 degrees in radians
+        # Regular movement
+        radians = math.radians(self.angle)
+        vertical = math.cos(radians) * self.velocity
+        horizontal = math.sin(radians) * self.velocity
         
-        # Calculate all movements at once
-        total_vertical = (math.cos(base_angle) * self.velocity + 
-                         math.cos(drift_angle) * self.drift_momentum)
-        total_horizontal = (math.sin(base_angle) * self.velocity + 
-                          math.sin(drift_angle) * self.drift_momentum)
+        # Drift movement
+        drift_radians = math.radians(self.angle + 90)
+        drift_vertical = math.cos(drift_radians) * self.drift_momentum
+        drift_horizontal = math.sin(drift_radians) * self.drift_momentum
         
-        self.y -= total_vertical
-        self.x -= total_horizontal
+        # Apply movement
+        self.y -= (vertical + drift_vertical)
+        self.x -= (horizontal + drift_horizontal)
         self.drift_momentum *= self.drift_friction
 
     def accelerate(self, forward=True):
@@ -68,14 +68,14 @@ class Car(pygame.sprite.Sprite):
         self.move()
         
     def reset(self, x=None, y=None):
-        """Reset car state with optional new position"""
-        if x is not None and y is not None:
-            self.x = x
-            self.y = y
-        self.velocity = 0
-        self.angle = 0
-        self.drift_momentum = 0
-        self.rect.center = (self.x, self.y)
+            """Reset car state with optional new position"""
+            if x is not None and y is not None:
+                self.x = x
+                self.y = y
+            self.velocity = 0
+            self.angle = 0
+            self.drift_momentum = 0
+            self.rect.center = (self.x, self.y)
 
     def handle_border_collision(self):
         # Store original position and movement to calculate the collision response
@@ -110,3 +110,4 @@ class Car(pygame.sprite.Sprite):
         car_mask = pygame.mask.from_surface(self.image)
         offset = (int(self.x - x), int(self.y - y))
         return mask.overlap(car_mask, offset)
+    
